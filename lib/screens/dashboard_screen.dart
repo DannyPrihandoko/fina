@@ -30,7 +30,7 @@ class DashboardScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('fina', style: TextStyle(fontWeight: FontWeight.black, fontSize: 24)),
+        title: const Text('fina', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 24)),
         centerTitle: false,
         actions: [
           IconButton(
@@ -54,7 +54,7 @@ class DashboardScreen extends ConsumerWidget {
               
               // Recent Transactions Header
               Row(
-                mainAxisAlignment: MainAxisAlignment.between,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
                     'Aktivitas Terbaru',
@@ -104,6 +104,7 @@ class DashboardScreen extends ConsumerWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'dashboard_fab',
         onPressed: () {
           Navigator.push(
             context,

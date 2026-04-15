@@ -27,6 +27,7 @@ class BillsScreen extends ConsumerWidget {
               },
             ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'bills_fab',
         onPressed: () {
           // TODO: Implement Add Bill
         },
@@ -44,7 +45,7 @@ class BillsScreen extends ConsumerWidget {
         child: Column(
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.between,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
                   padding: const EdgeInsets.all(10),
@@ -82,7 +83,7 @@ class BillsScreen extends ConsumerWidget {
             const Divider(color: AppColors.borderColor),
             const SizedBox(height: 8),
             Row(
-              mainAxisAlignment: MainAxisAlignment.between,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
