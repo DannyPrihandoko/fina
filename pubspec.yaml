@@ -1,0 +1,41 @@
+name: fina
+description: FINA - Aplikasi Manajemen Arus Kas Pribadi.
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+  
+  # State Management
+  flutter_riverpod: ^2.5.1
+  
+  # Local Database
+  sqflite: ^2.3.2
+  path: ^1.9.0
+  
+  # Notifications
+  flutter_local_notifications: ^17.1.2
+  timezone: ^0.9.2
+  
+  # UI Helpers
+  intl: ^0.19.0
+  google_fonts: ^6.2.1
+  percent_indicator: ^4.2.3
+  
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  fonts:
+    - family: Plus Jakarta Sans
+      fonts:
+        - asset: assets/fonts/PlusJakartaSans-Regular.ttf
+        - asset: assets/fonts/PlusJakartaSans-Bold.ttf
+          weight: 700

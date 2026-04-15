@@ -1,0 +1,27 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:fina/screens/dashboard_screen.dart';
+import 'package:fina/theme/app_theme.dart';
+
+void main() {
+  runApp(
+    const ProviderScope(
+      child: FinaApp(),
+    ),
+  );
+}
+
+class FinaApp extends StatelessWidget {
+  const FinaApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'fina',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
+      home: const DashboardScreen(),
+    );
+  }
+}

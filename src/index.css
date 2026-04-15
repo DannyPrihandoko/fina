@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #F8F9FA;
+  --color-card-pale-blue: #E3F2FD;
+  --color-cta-aqua: #00E5FF;
+  --color-text-dark-blue: #1A237E;
+  --color-text-muted: #5C6BC0;
+  --color-border-color: #D1D9E6;
+  --color-white: #FFFFFF;
+
+  --font-sans: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+body {
+  @apply bg-background text-text-dark-blue font-sans antialiased;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Custom shadow for Professional Polish */
+.polish-shadow {
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}

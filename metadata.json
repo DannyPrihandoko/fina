@@ -1,0 +1,6 @@
+{
+  "name": "fina",
+  "description": "Aplikasi manajemen arus kas pribadi kelas atas dengan wawasan AI offline dan pengingat tagihan cerdas.",
+  "requestFramePermissions": ["notifications"],
+  "majorCapabilities": ["offline_storage", "local_notifications"]
+}
