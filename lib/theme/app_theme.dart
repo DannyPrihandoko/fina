@@ -6,12 +6,11 @@ class AppTheme {
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
-      colorScheme: ColorScheme.light(
-        background: AppColors.background,
+      colorScheme: const ColorScheme.light(
+        surface: AppColors.background,
         primary: AppColors.primary,
         onPrimary: AppColors.white,
         secondary: AppColors.secondary,
-        surface: AppColors.white,
         error: AppColors.error,
       ),
       scaffoldBackgroundColor: AppColors.background,
@@ -64,6 +63,12 @@ class AppTheme {
             fontSize: 12,
           ),
         ),
+      ),
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+        },
       ),
     );
   }

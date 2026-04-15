@@ -23,9 +23,19 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _screens,
+      body: Stack(
+        children: List.generate(_screens.length, (index) {
+          final isActive = index == _selectedIndex;
+          return IgnorePointer(
+            ignoring: !isActive,
+            child: AnimatedOpacity(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              opacity: isActive ? 1.0 : 0.0,
+              child: _screens[index],
+            ),
+          );
+        }),
       ),
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:fina/screens/main_screen.dart';
+import 'package:fina/screens/splash_screen.dart';
 import 'package:fina/theme/app_theme.dart';
 
 void main() {
@@ -21,7 +20,7 @@ class FinaApp extends StatelessWidget {
       title: 'fina',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: const MainScreen(),
+      home: const SplashScreen(),
     );
   }
 }

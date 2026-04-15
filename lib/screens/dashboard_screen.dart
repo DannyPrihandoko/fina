@@ -135,7 +135,7 @@ class DashboardScreen extends ConsumerWidget {
               Text(
                 'SALDO UTAMA',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.7),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.2,
@@ -191,7 +191,7 @@ class DashboardScreen extends ConsumerWidget {
           const SizedBox(height: 4),
           Text(
             format.format(amount),
-            style: TextStyle(
+            style: const TextStyle(
               color: AppColors.textDarkBlue,
               fontSize: 16,
               fontWeight: FontWeight.w800,
@@ -209,7 +209,7 @@ class DashboardScreen extends ConsumerWidget {
       leading: Container(
         width: 44,
         height: 44,
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           color: AppColors.cardPaleBlue,
           shape: BoxShape.circle,
         ),
@@ -243,13 +243,13 @@ class DashboardScreen extends ConsumerWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        color: AppColors.cardPaleBlue.withOpacity(0.5),
+        color: AppColors.cardPaleBlue.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.borderColor.withOpacity(0.5), style: BorderStyle.none),
+        border: Border.all(color: AppColors.borderColor.withValues(alpha: 0.5), style: BorderStyle.none),
       ),
       child: Column(
         children: [
-          Icon(Icons.inbox_outlined, color: AppColors.textMuted.withOpacity(0.5), size: 48),
+          Icon(Icons.inbox_outlined, color: AppColors.textMuted.withValues(alpha: 0.5), size: 48),
           const SizedBox(height: 12),
           Text(
             message,

@@ -50,7 +50,7 @@ class BillsScreen extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppColors.cardPaleBlue,
+                    color: AppColors.textDarkBlue.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.receipt_outlined, color: AppColors.textDarkBlue),
@@ -109,7 +109,7 @@ class BillsScreen extends ConsumerWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.receipt_long_outlined, size: 80, color: AppColors.textMuted.withOpacity(0.3)),
+          Icon(Icons.receipt_long_outlined, size: 80, color: AppColors.textMuted.withValues(alpha: 0.3)),
           const SizedBox(height: 16),
           const Text('Belum ada tagihan terdaftar.', style: TextStyle(color: AppColors.textMuted, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
