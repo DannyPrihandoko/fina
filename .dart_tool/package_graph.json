@@ -8,6 +8,7 @@
       "version": "1.0.0+1",
       "dependencies": [
         "cupertino_icons",
+        "fl_chart",
         "flutter",
         "flutter_local_notifications",
         "flutter_riverpod",
@@ -45,6 +46,15 @@
         "stack_trace",
         "stream_channel",
         "test_api",
+        "vector_math"
+      ]
+    },
+    {
+      "name": "fl_chart",
+      "version": "1.2.0",
+      "dependencies": [
+        "equatable",
+        "flutter",
         "vector_math"
       ]
     },
@@ -532,6 +542,14 @@
     {
       "name": "petitparser",
       "version": "7.0.2",
+      "dependencies": [
+        "collection",
+        "meta"
+      ]
+    },
+    {
+      "name": "equatable",
+      "version": "2.0.8",
       "dependencies": [
         "collection",
         "meta"

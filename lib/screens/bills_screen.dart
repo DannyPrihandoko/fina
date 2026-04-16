@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import '../providers/database_provider.dart';
 import '../theme/colors.dart';
 
+import 'add_bill_screen.dart';
+
 class BillsScreen extends ConsumerWidget {
   const BillsScreen({super.key});
 
@@ -23,13 +25,47 @@ class BillsScreen extends ConsumerWidget {
               itemCount: bills.length,
               itemBuilder: (context, index) {
                 final bill = bills[index];
-                return _buildBillCard(context, bill, currencyFormat);
+                return Dismissible(
+                  key: Key('bill_${bill.id}'),
+                  direction: DismissDirection.endToStart,
+                  background: Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent.withValues(alpha: 0.8),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.delete_outline, color: Colors.white),
+                  ),
+                  onDismissed: (direction) {
+                    ref.read(billsProvider.notifier).removeBill(bill.id!);
+                    NotificationService().cancelBillReminders(bill.id!);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Tagihan ${bill.title} dihapus'),
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        action: SnackBarAction(
+                          label: 'URUNG',
+                          onPressed: () {
+                            ref.read(billsProvider.notifier).addBill(bill);
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                  child: _buildBillCard(context, bill, currencyFormat),
+                );
               },
             ),
       floatingActionButton: FloatingActionButton(
         heroTag: 'bills_fab',
         onPressed: () {
-          // TODO: Implement Add Bill
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AddBillScreen()),
+          );
         },
         backgroundColor: AppColors.ctaAqua,
         child: const Icon(Icons.add, color: AppColors.textDarkBlue),
