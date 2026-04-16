@@ -128,6 +128,28 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     );
   }
 
+  List<Transaction> _filterTransactions(List<Transaction> list, String range) {
+    final now = DateTime.now();
+    DateTime start;
+
+    switch (range) {
+      case '7D':
+        start = DateTime(now.year, now.month, now.day).subtract(const Duration(days: 6));
+        return list.where((tx) => tx.date.isAfter(start.subtract(const Duration(seconds: 1)))).toList();
+      case '30D':
+        start = DateTime(now.year, now.month, now.day).subtract(const Duration(days: 29));
+        return list.where((tx) => tx.date.isAfter(start.subtract(const Duration(seconds: 1)))).toList();
+      case 'Bulan Ini':
+        start = DateTime(now.year, now.month, 1);
+        return list.where((tx) => tx.date.year == now.year && tx.date.month == now.month).toList();
+      case 'Bulan Lalu':
+        final prevMonth = DateTime(now.year, now.month - 1, 1);
+        return list.where((tx) => tx.date.year == prevMonth.year && tx.date.month == prevMonth.month).toList();
+      default:
+        return list;
+    }
+  }
+
   Widget _buildMainSummaryCard(double net, double income, double expense, NumberFormat format) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -295,7 +317,6 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
           barTouchData: BarTouchData(
             enabled: true,
             touchTooltipData: BarTouchTooltipData(
-              tooltipRoundedRadius: 8,
               getTooltipItem: (group, groupIndex, rod, rodIndex) {
                 return BarTooltipItem(
                   NumberFormat.compactCurrency(symbol: 'Rp', locale: 'id_ID').format(rod.toY),
