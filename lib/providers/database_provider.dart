@@ -51,6 +51,11 @@ class BillsNotifier extends StateNotifier<List<Bill>> {
     await loadBills();
   }
 
+  Future<void> updateBill(Bill bill) async {
+    await _dbService.updateBill(bill);
+    await loadBills();
+  }
+
   Future<void> removeBill(int id) async {
     await _dbService.deleteBill(id);
     await loadBills();

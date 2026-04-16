@@ -14,4 +14,9 @@ class AppColors {
   static const Color secondary = ctaAqua;
   static const Color surface = white;
   static const Color error = Color(0xFFD32F2F);
+
+  // Premium Gradients
+  static const List<Color> mainGradient = [textDarkBlue, Color(0xFF3949AB)];
+  static const List<Color> accentGradient = [ctaAqua, Color(0xFF00BFA5)];
+  static const List<Color> surfaceGradient = [Colors.white, Color(0xFFF1F4F9)];
 }

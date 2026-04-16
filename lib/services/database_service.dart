@@ -91,6 +91,16 @@ CREATE TABLE bills (
     return await db.delete('bills', where: 'id = ?', whereArgs: [id]);
   }
 
+  Future<int> updateBill(Bill bill) async {
+    final db = await instance.database;
+    return await db.update(
+      'bills',
+      bill.toMap(),
+      where: 'id = ?',
+      whereArgs: [bill.id],
+    );
+  }
+
   Future close() async {
     final db = await instance.database;
     db.close();

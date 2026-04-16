@@ -13,7 +13,7 @@ class ThousandSeparatorFormatter extends TextInputFormatter {
     String cleanString = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
     
     if (cleanString.isEmpty) {
-      return newValue.copyWith(context: '');
+      return newValue.copyWith(text: '');
     }
 
     double value = double.parse(cleanString);

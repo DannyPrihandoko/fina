@@ -5,11 +5,12 @@ import '../models/bill.dart';
 import '../providers/database_provider.dart';
 import '../services/notification_service.dart';
 import '../theme/colors.dart';
-
 import '../utils/currency_formatter.dart';
 
 class AddBillScreen extends ConsumerStatefulWidget {
-  const AddBillScreen({super.key});
+  final Bill? existingBill;
+
+  const AddBillScreen({super.key, this.existingBill});
 
   @override
   ConsumerState<AddBillScreen> createState() => _AddBillScreenState();
@@ -17,11 +18,11 @@ class AddBillScreen extends ConsumerStatefulWidget {
 
 class _AddBillScreenState extends ConsumerState<AddBillScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
-  final _amountController = TextEditingController();
-  DateTime _selectedDate = DateTime.now().add(const Duration(days: 7));
-  String _category = 'Listrik';
-  bool _reminderEnabled = true;
+  late TextEditingController _titleController;
+  late TextEditingController _amountController;
+  late DateTime _selectedDate;
+  late String _category;
+  late bool _reminderEnabled;
 
   final List<String> _categories = [
     'Listrik',
@@ -31,6 +32,22 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
     'Asuransi',
     'Lainnya',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController = TextEditingController(text: widget.existingBill?.title ?? '');
+    
+    // Format amount with separators for display if editing
+    final amountText = widget.existingBill != null 
+        ? NumberFormat.currency(locale: 'id_ID', symbol: '', decimalDigits: 0).format(widget.existingBill!.amount).trim()
+        : '';
+    _amountController = TextEditingController(text: amountText);
+    
+    _selectedDate = widget.existingBill?.dueDate ?? DateTime.now().add(const Duration(days: 7));
+    _category = widget.existingBill?.category ?? 'Listrik';
+    _reminderEnabled = widget.existingBill?.reminderEnabled ?? true;
+  }
 
   @override
   void dispose() {
@@ -43,7 +60,7 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate,
-      firstDate: DateTime.now(),
+      firstDate: DateTime.now().subtract(const Duration(days: 365)), // Allow past dates for record
       lastDate: DateTime(2101),
       builder: (context, child) {
         return Theme(
@@ -65,43 +82,104 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
 
   void _saveBill() async {
     if (_formKey.currentState!.validate()) {
+      final amount = CurrencyUtils.parse(_amountController.text).abs();
+      
       final bill = Bill(
+        id: widget.existingBill?.id,
         title: _titleController.text,
-        amount: CurrencyUtils.parse(_amountController.text).abs(),
+        amount: amount,
         dueDate: _selectedDate,
         category: _category,
         reminderEnabled: _reminderEnabled,
       );
 
-      // Save to DB
-      await ref.read(billsProvider.notifier).addBill(bill);
-      
-      // The bill ID is generated only after saving. 
-      // We need the updated list to find the ID of the newly added bill.
-      final updatedBills = ref.read(billsProvider);
-      final savedBill = updatedBills.firstWhere((b) => b.title == bill.title && b.amount == bill.amount);
-
-      if (_reminderEnabled) {
-        await NotificationService().scheduleBillReminders(savedBill);
+      if (widget.existingBill != null) {
+        await ref.read(billsProvider.notifier).updateBill(bill);
+        // Reschedule reminders if needed
+        if (_reminderEnabled) {
+          await NotificationService().cancelBillReminders(bill.id!);
+          await NotificationService().scheduleBillReminders(bill);
+        } else {
+          await NotificationService().cancelBillReminders(bill.id!);
+        }
+      } else {
+        await ref.read(billsProvider.notifier).addBill(bill);
+        // Find newly added bill to schedule reminders
+        final updatedBills = ref.read(billsProvider);
+        final savedBill = updatedBills.firstWhere((b) => b.title == bill.title && b.amount == bill.amount);
+        if (_reminderEnabled) {
+          await NotificationService().scheduleBillReminders(savedBill);
+        }
       }
 
       if (mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Tagihan berhasil dijadwalkan!'),
-            backgroundColor: AppColors.ctaAqua,
-          ),
-        );
+        _showSuccessDialog();
       }
     }
   }
 
+  void _showSuccessDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        backgroundColor: Colors.white,
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.ctaAqua.withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.check_circle_rounded, color: AppColors.ctaAqua, size: 48),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                widget.existingBill != null ? 'Perubahan Disimpan!' : 'Tagihan Ditambahkan!',
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textDarkBlue),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                widget.existingBill != null 
+                  ? 'Data tagihan Anda telah berhasil diperbarui.' 
+                  : 'Tagihan Anda telah berhasil dijadwalkan.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: AppColors.textMuted),
+              ),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context); // Close dialog
+                    Navigator.pop(context); // Back to list
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.textDarkBlue,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  child: const Text('OK', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isEditing = widget.existingBill != null;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tambah Tagihan', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(isEditing ? 'Edit Tagihan' : 'Tambah Tagihan', style: const TextStyle(fontWeight: FontWeight.bold)),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -263,7 +341,10 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
-                  child: const Text('JADWALKAN TAGIHAN', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                  child: Text(
+                    isEditing ? 'SIMPAN PERUBAHAN' : 'JADWALKAN TAGIHAN', 
+                    style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2)
+                  ),
                 ),
               ),
             ],
