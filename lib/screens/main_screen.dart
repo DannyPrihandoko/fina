@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dashboard_screen.dart';
 import 'bills_screen.dart';
 import 'ai_screen.dart';
+import 'stats_screen.dart';
 import '../theme/colors.dart';
 
 class MainScreen extends StatefulWidget {
@@ -16,6 +17,7 @@ class _MainScreenState extends State<MainScreen> {
 
   final List<Widget> _screens = [
     const DashboardScreen(),
+    const StatsScreen(),
     const BillsScreen(),
     const AIScreen(),
   ];
@@ -54,6 +56,11 @@ class _MainScreenState extends State<MainScreen> {
               icon: Icon(Icons.dashboard_outlined),
               activeIcon: Icon(Icons.dashboard),
               label: 'DASHBOARD',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.bar_chart_outlined),
+              activeIcon: Icon(Icons.bar_chart),
+              label: 'LAPORAN',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.receipt_long_outlined),

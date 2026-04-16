@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/database_provider.dart';
 import '../models/transaction.dart';
 import '../theme/colors.dart';
+import '../utils/currency_formatter.dart';
 
 class AddTransactionScreen extends ConsumerStatefulWidget {
   const AddTransactionScreen({super.key});
@@ -39,7 +40,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
     if (_formKey.currentState!.validate()) {
       final tx = Transaction(
         title: _titleController.text,
-        amount: double.parse(_amountController.text),
+        amount: CurrencyUtils.parse(_amountController.text).abs(),
         type: _type,
         category: _category,
         date: DateTime.now(),
@@ -108,6 +109,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
               TextFormField(
                 controller: _amountController,
                 keyboardType: TextInputType.number,
+                inputFormatters: [ThousandSeparatorFormatter()],
                 style: const TextStyle(fontSize: 40, fontWeight: FontWeight.w800, color: AppColors.textDarkBlue),
                 decoration: const InputDecoration(
                   prefixText: 'Rp ',
@@ -117,7 +119,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) return 'Masukkan jumlah';
-                  if (double.tryParse(value) == null) return 'Jumlah tidak valid';
+                  if (CurrencyUtils.parse(value) <= 0) return 'Jumlah tidak valid';
                   return null;
                 },
               ),

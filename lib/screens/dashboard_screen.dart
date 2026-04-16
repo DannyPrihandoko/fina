@@ -4,23 +4,15 @@ import 'package:intl/intl.dart';
 import '../providers/database_provider.dart';
 import '../models/transaction.dart';
 import '../theme/colors.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'add_transaction_screen.dart';
 import 'settings_screen.dart';
-import '../models/bill.dart'; // Added missing Bill model import for upcoming bills section
+import '../models/bill.dart';
 
-class DashboardScreen extends ConsumerStatefulWidget {
+class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
   @override
-  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
-}
-
-class _DashboardScreenState extends ConsumerState<DashboardScreen> {
-  String _timeRange = '7D'; // '7D' or '30D'
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final transactions = ref.watch(transactionsProvider);
     final bills = ref.watch(billsProvider);
 
@@ -67,33 +59,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               _buildSummarySection(balance, totalIncome, totalExpenses, currencyFormat),
               const SizedBox(height: 32),
 
-              // Chart Section Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Rekapitulasi Keuangan',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: AppColors.cardPaleBlue,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        _buildTimeRangeToggle('7D'),
-                        _buildTimeRangeToggle('30D'),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // Chart
-              _buildChartSection(transactions),
+              // Quick Insight Card (Replaces full chart)
+              _buildQuickInsightCard(context, transactions),
               
               const SizedBox(height: 32),
               
@@ -197,122 +164,83 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildTimeRangeToggle(String range) {
-    final isSelected = _timeRange == range;
-    return GestureDetector(
-      onTap: () => setState(() => _timeRange = range),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.textDarkBlue : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          range,
-          style: TextStyle(
-            color: isSelected ? Colors.white : AppColors.textMuted,
-            fontSize: 10,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    );
-  }
+  Widget _buildQuickInsightCard(BuildContext context, List<Transaction> transactions) {
+    if (transactions.isEmpty) return const SizedBox.shrink();
 
-  Widget _buildChartSection(List<Transaction> transactions) {
-    final now = DateTime.now();
-    final daysToSubtract = _timeRange == '7D' ? 7 : 30;
-    final startDate = DateTime(now.year, now.month, now.day).subtract(Duration(days: daysToSubtract - 1));
+    final expenses = transactions.where((tx) => tx.type == TransactionType.expense).toList();
+    if (expenses.isEmpty) return const SizedBox.shrink();
 
-    Map<DateTime, double> incomeData = {};
-    Map<DateTime, double> expenseData = {};
-
-    for (int i = 0; i < daysToSubtract; i++) {
-      final date = startDate.add(Duration(days: i));
-      incomeData[date] = 0;
-      expenseData[date] = 0;
-    }
-
-    for (var tx in transactions) {
-      final txDate = DateTime(tx.date.year, tx.date.month, tx.date.day);
-      if (txDate.isAtSameMomentAs(startDate) || txDate.isAfter(startDate)) {
-        if (tx.type == TransactionType.income) {
-          incomeData[txDate] = (incomeData[txDate] ?? 0) + tx.amount;
-        } else {
-          expenseData[txDate] = (expenseData[txDate] ?? 0) + tx.amount;
-        }
-      }
-    }
-
-    final barGroups = List.generate(daysToSubtract, (index) {
-      final date = startDate.add(Duration(days: index));
-      return BarChartGroupData(
-        x: index,
-        barRods: [
-          BarChartRodData(
-            toY: incomeData[date]!,
-            color: AppColors.ctaAqua,
-            width: _timeRange == '7D' ? 12 : 4,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
-          ),
-          BarChartRodData(
-            toY: expenseData[date]!,
-            color: AppColors.textDarkBlue.withValues(alpha: 0.5),
-            width: _timeRange == '7D' ? 12 : 4,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
-          ),
-        ],
-      );
-    });
+    final last7Days = expenses.where((tx) => tx.date.isAfter(DateTime.now().subtract(const Duration(days: 7)))).length;
 
     return Container(
-      height: 220,
-      padding: const EdgeInsets.fromLTRB(10, 20, 20, 10),
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.borderColor),
-      ),
-      child: BarChart(
-        BarChartData(
-          alignment: BarChartAlignment.spaceAround,
-          maxY: _getMaxY(incomeData, expenseData) * 1.2,
-          barTouchData: BarTouchData(enabled: true),
-          titlesData: FlTitlesData(
-            show: true,
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                getTitlesWidget: (value, meta) {
-                  if (_timeRange == '30D' && value % 5 != 0) return const SizedBox.shrink();
-                  final date = startDate.add(Duration(days: value.toInt()));
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text(
-                      DateFormat(_timeRange == '7D' ? 'E' : 'dd').format(date),
-                      style: const TextStyle(color: AppColors.textMuted, fontSize: 10, fontWeight: FontWeight.bold),
-                    ),
-                  );
-                },
-              ),
-            ),
-            leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          ),
-          gridData: const FlGridData(show: false),
-          borderData: FlBorderData(show: false),
-          barGroups: barGroups,
+        gradient: LinearGradient(
+          colors: [AppColors.textDarkBlue, AppColors.textDarkBlue.withValues(alpha: 0.8)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.textDarkBlue.withValues(alpha: 0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.insights_rounded, color: Colors.white, size: 20),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Wawasan Keuangan',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Anda memiliki $last7Days pengeluaran dalam 7 hari terakhir. Lihat detail lengkap dan grafik tren Anda di halaman laporan.',
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 13, height: 1.5),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Row(
+                  children: [
+                    Text(
+                      'Buka Laporan',
+                      style: TextStyle(color: AppColors.ctaAqua, fontWeight: FontWeight.bold, fontSize: 12),
+                    ),
+                    SizedBox(width: 8),
+                    Icon(Icons.arrow_forward_rounded, color: AppColors.ctaAqua, size: 14),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
-  }
-
-  double _getMaxY(Map<DateTime, double> income, Map<DateTime, double> expense) {
-    double max = 0;
-    income.values.forEach((v) => if (v > max) max = v);
-    expense.values.forEach((v) => if (v > max) max = v);
-    return max == 0 ? 1000 : max;
   }
 
   Widget _buildMinimalBillItem(Bill bill, NumberFormat format) {

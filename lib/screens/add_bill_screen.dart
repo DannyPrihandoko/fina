@@ -6,6 +6,8 @@ import '../providers/database_provider.dart';
 import '../services/notification_service.dart';
 import '../theme/colors.dart';
 
+import '../utils/currency_formatter.dart';
+
 class AddBillScreen extends ConsumerStatefulWidget {
   const AddBillScreen({super.key});
 
@@ -65,7 +67,7 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
     if (_formKey.currentState!.validate()) {
       final bill = Bill(
         title: _titleController.text,
-        amount: double.parse(_amountController.text).abs(),
+        amount: CurrencyUtils.parse(_amountController.text).abs(),
         dueDate: _selectedDate,
         category: _category,
         reminderEnabled: _reminderEnabled,
@@ -117,6 +119,7 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
               TextFormField(
                 controller: _amountController,
                 keyboardType: TextInputType.number,
+                inputFormatters: [ThousandSeparatorFormatter()],
                 style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: AppColors.textDarkBlue),
                 decoration: const InputDecoration(
                   prefixText: 'Rp ',
@@ -126,7 +129,7 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) return 'Masukkan jumlah';
-                  if (double.tryParse(value) == null) return 'Jumlah tidak valid';
+                  if (CurrencyUtils.parse(value) <= 0) return 'Jumlah tidak valid';
                   return null;
                 },
               ),
