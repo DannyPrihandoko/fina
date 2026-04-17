@@ -6,7 +6,10 @@ import '../models/transaction.dart';
 import '../theme/colors.dart';
 import 'add_transaction_screen.dart';
 import 'settings_screen.dart';
+import 'transactions_screen.dart';
 import '../models/bill.dart';
+import '../providers/settings_provider.dart';
+import '../providers/navigation_provider.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -15,6 +18,7 @@ class DashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final transactions = ref.watch(transactionsProvider);
     final bills = ref.watch(billsProvider);
+    final settings = ref.watch(settingsProvider);
 
     double totalIncome = 0;
     double totalExpenses = 0;
@@ -60,7 +64,7 @@ class DashboardScreen extends ConsumerWidget {
               const SizedBox(height: 32),
 
               // Quick Insight Card (Replaces full chart)
-              _buildQuickInsightCard(context, transactions),
+              _buildQuickInsightCard(context, ref, settings, transactions),
               
               const SizedBox(height: 32),
               
@@ -69,11 +73,16 @@ class DashboardScreen extends ConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Aktivitas Terbaru',
+                    'Aktivitas Hari Ini',
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   TextButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const TransactionsScreen()),
+                      );
+                    },
                     child: const Text('Lihat Semua'),
                   ),
                 ],
@@ -81,16 +90,25 @@ class DashboardScreen extends ConsumerWidget {
               const SizedBox(height: 12),
               
               // Transactions List
-              if (transactions.isEmpty)
-                _buildEmptyState(context, 'Belum ada transaksi.')
-              else
-                ListView.separated(
+              (() {
+                final now = DateTime.now();
+                final today = DateTime(now.year, now.month, now.day);
+                final todayTransactions = transactions.where((tx) {
+                  final txDate = DateTime(tx.date.year, tx.date.month, tx.date.day);
+                  return txDate.isAtSameMomentAs(today);
+                }).toList();
+
+                if (todayTransactions.isEmpty) {
+                  return _buildEmptyState(context, 'Belum ada aktivitas hari ini.');
+                }
+
+                return ListView.separated(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  itemCount: transactions.length > 5 ? 5 : transactions.length,
+                  itemCount: todayTransactions.length > 5 ? 5 : todayTransactions.length,
                   separatorBuilder: (context, index) => const Divider(height: 1, color: AppColors.borderColor),
                   itemBuilder: (context, index) {
-                    final tx = transactions[index];
+                    final tx = todayTransactions[index];
                     return Dismissible(
                       key: Key('tx_${tx.id}'),
                       direction: DismissDirection.endToStart,
@@ -119,8 +137,8 @@ class DashboardScreen extends ConsumerWidget {
                       child: _buildTransactionItem(context, tx, currencyFormat),
                     );
                   },
-                ),
-              
+                );
+              })(),
               const SizedBox(height: 32),
               
               // Upcoming Bills Header
@@ -164,7 +182,8 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildQuickInsightCard(BuildContext context, List<Transaction> transactions) {
+  Widget _buildQuickInsightCard(BuildContext context, WidgetRef ref, SettingsState settings, List<Transaction> transactions) {
+    if (settings.isInsightDismissed) return const SizedBox.shrink();
     if (transactions.isEmpty) return const SizedBox.shrink();
 
     final expenses = transactions.where((tx) => tx.type == TransactionType.expense).toList();
@@ -204,9 +223,16 @@ class DashboardScreen extends ConsumerWidget {
                 child: const Icon(Icons.insights_rounded, color: Colors.white, size: 20),
               ),
               const SizedBox(width: 12),
-              const Text(
-                'Wawasan Keuangan',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+              const Expanded(
+                child: Text(
+                  'Wawasan Keuangan',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+              ),
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(Icons.close_rounded, color: Colors.white70, size: 20),
+                onPressed: () => ref.read(settingsProvider.notifier).dismissInsight(),
               ),
             ],
           ),
@@ -219,21 +245,24 @@ class DashboardScreen extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Row(
-                  children: [
-                    Text(
-                      'Buka Laporan',
-                      style: TextStyle(color: AppColors.ctaAqua, fontWeight: FontWeight.bold, fontSize: 12),
-                    ),
-                    SizedBox(width: 8),
-                    Icon(Icons.arrow_forward_rounded, color: AppColors.ctaAqua, size: 14),
-                  ],
+              GestureDetector(
+                onTap: () => ref.read(navigationProvider.notifier).state = 1,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Row(
+                    children: [
+                      Text(
+                        'Buka Laporan',
+                        style: TextStyle(color: AppColors.ctaAqua, fontWeight: FontWeight.bold, fontSize: 12),
+                      ),
+                      SizedBox(width: 8),
+                      Icon(Icons.arrow_forward_rounded, color: AppColors.ctaAqua, size: 14),
+                    ],
+                  ),
                 ),
               ),
             ],

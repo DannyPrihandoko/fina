@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import '../services/local_ai_engine.dart';
 import '../providers/database_provider.dart';
 import '../theme/colors.dart';
@@ -17,7 +18,7 @@ class _AIScreenState extends ConsumerState<AIScreen> {
   final List<Map<String, String>> _messages = [
     {
       'role': 'ai',
-      'content': 'Halo! Saya asisten fina. Saya sudah siap menganalisis keuangan Anda. Ada yang ingin ditanyakan?'
+      'content': 'Halo! Saya asisten **fina**. Saya sudah siap menganalisis keuangan Anda. Ada yang ingin ditanyakan? 😊'
     }
   ];
   final _controller = TextEditingController();
@@ -25,10 +26,11 @@ class _AIScreenState extends ConsumerState<AIScreen> {
   bool _isTyping = false;
 
   final List<String> _quickActions = [
-    'Saran Saldo',
-    'Analisis Keuangan',
-    'Status Saldo',
-    'Dana Darurat',
+    'Gimana kondisi keuangan saya?',
+    'Berapa sisa uang saya?',
+    'Tabungan saya aman gak?',
+    'Ada tagihan apa?',
+    'Bantuan',
   ];
 
   void _sendMessage([String? text]) {
@@ -44,7 +46,7 @@ class _AIScreenState extends ConsumerState<AIScreen> {
     _scrollToBottom();
 
     // Natural delay for "AI thinking" effect
-    Future.delayed(const Duration(milliseconds: 1200), () {
+    Future.delayed(const Duration(milliseconds: 1500), () {
       if (!mounted) return;
 
       final transactions = ref.read(transactionsProvider);
@@ -81,16 +83,17 @@ class _AIScreenState extends ConsumerState<AIScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Asisten AI', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('Asisten Fina', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         elevation: 0,
+        centerTitle: true,
       ),
       body: Column(
         children: [
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
               itemCount: _messages.length + (_isTyping ? 1 : 0),
               itemBuilder: (context, index) {
                 if (index == _messages.length && _isTyping) {
@@ -110,10 +113,11 @@ class _AIScreenState extends ConsumerState<AIScreen> {
   }
 
   Widget _buildMessageBubble(String content, bool isAI) {
+    final theme = Theme.of(context);
     return Align(
       alignment: isAI ? Alignment.centerLeft : Alignment.centerRight,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
+        margin: const EdgeInsets.only(bottom: 20),
         padding: const EdgeInsets.all(16),
         constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.85),
         decoration: BoxDecoration(
@@ -126,19 +130,42 @@ class _AIScreenState extends ConsumerState<AIScreen> {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 12,
               offset: const Offset(0, 4),
             ),
           ],
-          border: isAI ? Border.all(color: AppColors.borderColor) : null,
+          border: isAI ? Border.all(color: AppColors.borderColor.withValues(alpha: 0.5)) : null,
         ),
-        child: Text(
-          content,
-          style: TextStyle(
-            color: isAI ? AppColors.textDarkBlue : Colors.white,
-            fontSize: 14,
-            height: 1.5,
+        child: MarkdownBody(
+          data: content,
+          styleSheet: MarkdownStyleSheet(
+            p: TextStyle(
+              color: isAI ? AppColors.textDarkBlue : Colors.white,
+              fontSize: 14,
+              height: 1.5,
+            ),
+            h3: const TextStyle(
+              color: AppColors.textDarkBlue,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              height: 2.0,
+            ),
+            h4: const TextStyle(
+              color: AppColors.textDarkBlue,
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+              height: 1.8,
+            ),
+            listBullet: TextStyle(
+              color: isAI ? AppColors.textDarkBlue : Colors.white,
+            ),
+            code: TextStyle(
+              backgroundColor: AppColors.cardPaleBlue,
+              color: AppColors.textDarkBlue,
+              fontSize: 13,
+              fontFamily: 'monospace',
+            ),
           ),
         ),
       ),
@@ -149,21 +176,29 @@ class _AIScreenState extends ConsumerState<AIScreen> {
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
+        margin: const EdgeInsets.only(bottom: 20, left: 4),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.borderColor),
+          border: Border.all(color: AppColors.borderColor.withValues(alpha: 0.5)),
         ),
-        child: const SizedBox(
-          width: 40,
-          child: LinearProgressIndicator(
-            backgroundColor: AppColors.cardPaleBlue,
-            valueColor: AlwaysStoppedAnimation<Color>(AppColors.ctaAqua),
-            minHeight: 2,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: List.generate(3, (index) => _buildDot(index)),
         ),
+      ),
+    );
+  }
+
+  Widget _buildDot(int index) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 2),
+      width: 6,
+      height: 6,
+      decoration: const BoxDecoration(
+        color: AppColors.ctaAqua,
+        shape: BoxShape.circle,
       ),
     );
   }
@@ -182,7 +217,7 @@ class _AIScreenState extends ConsumerState<AIScreen> {
             child: ActionChip(
               label: Text(_quickActions[index]),
               labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textDarkBlue),
-              backgroundColor: AppColors.ctaAqua.withValues(alpha: 0.2),
+              backgroundColor: AppColors.ctaAqua.withValues(alpha: 0.15),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide.none),
               onPressed: () => _sendMessage(_quickActions[index]),
             ),
@@ -194,21 +229,22 @@ class _AIScreenState extends ConsumerState<AIScreen> {
 
   Widget _buildInputSection() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 34),
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(top: BorderSide(color: AppColors.borderColor)),
+        border: Border(top: BorderSide(color: AppColors.borderColor, width: 0.5)),
       ),
       child: Row(
         children: [
           Expanded(
             child: TextField(
               controller: _controller,
+              style: const TextStyle(fontSize: 14),
               decoration: InputDecoration(
                 hintText: 'Tanya asisten fina...',
                 hintStyle: const TextStyle(color: AppColors.textMuted),
                 filled: true,
-                fillColor: AppColors.cardPaleBlue.withValues(alpha: 0.5),
+                fillColor: AppColors.cardPaleBlue.withValues(alpha: 0.4),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(24),
                   borderSide: BorderSide.none,
@@ -219,11 +255,16 @@ class _AIScreenState extends ConsumerState<AIScreen> {
             ),
           ),
           const SizedBox(width: 12),
-          CircleAvatar(
-            backgroundColor: AppColors.textDarkBlue,
-            child: IconButton(
-              onPressed: () => _sendMessage(),
-              icon: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
+          GestureDetector(
+            onTap: () => _sendMessage(),
+            child: Container(
+              height: 44,
+              width: 44,
+              decoration: const BoxDecoration(
+                color: AppColors.textDarkBlue,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.arrow_upward_rounded, color: Colors.white, size: 24),
             ),
           ),
         ],

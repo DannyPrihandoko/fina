@@ -3,16 +3,19 @@ import '../services/database_service.dart';
 import '../models/transaction.dart';
 import '../models/bill.dart';
 
+import 'package:fina/providers/settings_provider.dart';
+
 final databaseServiceProvider = Provider((ref) => DatabaseService.instance);
 
 final transactionsProvider = StateNotifierProvider<TransactionsNotifier, List<Transaction>>((ref) {
-  return TransactionsNotifier(ref.watch(databaseServiceProvider));
+  return TransactionsNotifier(ref.watch(databaseServiceProvider), ref);
 });
 
 class TransactionsNotifier extends StateNotifier<List<Transaction>> {
   final DatabaseService _dbService;
+  final Ref _ref;
 
-  TransactionsNotifier(this._dbService) : super([]) {
+  TransactionsNotifier(this._dbService, this._ref) : super([]) {
     loadTransactions();
   }
 
@@ -23,6 +26,7 @@ class TransactionsNotifier extends StateNotifier<List<Transaction>> {
   Future<void> addTransaction(Transaction tx) async {
     await _dbService.createTransaction(tx);
     await loadTransactions();
+    await _ref.read(settingsProvider.notifier).revealInsight();
   }
 
   Future<void> removeTransaction(int id) async {

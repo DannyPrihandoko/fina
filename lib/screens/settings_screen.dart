@@ -1,56 +1,40 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/colors.dart';
 import '../services/notification_service.dart';
+import '../providers/settings_provider.dart';
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
-  @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
-}
-
-class _SettingsScreenState extends State<SettingsScreen> {
-  bool _notificationsEnabled = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _checkNotificationStatus();
-  }
-
-  Future<void> _checkNotificationStatus() async {
-    // For now, we assume it's disabled until requested
-    // In a real app, you'd check storage or permission status
-    setState(() {
-      _notificationsEnabled = false; 
-    });
-  }
-
-  Future<void> _toggleNotifications(bool value) async {
+  Future<void> _toggleNotifications(WidgetRef ref, BuildContext context, bool value) async {
     if (value) {
       final granted = await NotificationService().requestPermissions();
       if (granted) {
-        setState(() => _notificationsEnabled = true);
-        if (mounted) {
-           ScaffoldMessenger.of(context).showSnackBar(
+        await ref.read(settingsProvider.notifier).setNotificationsEnabled(true);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Notifikasi diaktifkan!')),
           );
         }
       } else {
-        if (mounted) {
+        if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Izin notifikasi ditolak.')),
           );
         }
-        setState(() => _notificationsEnabled = false);
+        await ref.read(settingsProvider.notifier).setNotificationsEnabled(false);
       }
     } else {
-      setState(() => _notificationsEnabled = false);
+      await ref.read(settingsProvider.notifier).setNotificationsEnabled(false);
     }
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsProvider);
+    final notificationsEnabled = settings.isNotificationsEnabled;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Pengaturan', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -92,12 +76,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     title: const Text('Aktifkan Notifikasi', style: TextStyle(fontWeight: FontWeight.bold)),
                     subtitle: const Text('Terima pengingat tagihan dan ringkasan harian'),
                     trailing: Switch.adaptive(
-                      value: _notificationsEnabled,
+                      value: notificationsEnabled,
                       activeColor: AppColors.ctaAqua,
-                      onChanged: _toggleNotifications,
+                      onChanged: (value) => _toggleNotifications(ref, context, value),
                     ),
                   ),
-                  if (_notificationsEnabled) ...[
+                  if (notificationsEnabled) ...[
                     const Divider(height: 1, indent: 70),
                     ListTile(
                       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),

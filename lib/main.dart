@@ -4,12 +4,19 @@ import 'package:fina/screens/splash_screen.dart';
 import 'package:fina/theme/app_theme.dart';
 import 'package:fina/services/notification_service.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:fina/providers/settings_provider.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await NotificationService().init();
+  final sharedPrefs = await SharedPreferences.getInstance();
   runApp(
-    const ProviderScope(
-      child: FinaApp(),
+    ProviderScope(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(sharedPrefs),
+      ],
+      child: const FinaApp(),
     ),
   );
 }

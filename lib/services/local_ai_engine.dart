@@ -26,6 +26,7 @@ class LocalAIEngine {
 
     double income = 0;
     double expense = 0;
+    double needs = 0;
     double wants = 0;
     double savings = 0;
 
@@ -34,7 +35,11 @@ class LocalAIEngine {
         income += tx.amount;
       } else {
         expense += tx.amount;
-        if (['hiburan', 'belanja', 'makanan', 'jajan'].contains(tx.category.toLowerCase())) {
+        final cat = tx.category.toLowerCase();
+        // Categorization for 50/30/20
+        if (['makanan', 'transportasi', 'kesehatan', 'cicilan', 'tagihan', 'listrik', 'air'].contains(cat)) {
+          needs += tx.amount;
+        } else if (['hiburan', 'belanja', 'hobi', 'jajan', 'nonton'].contains(cat)) {
           wants += tx.amount;
         }
       }
@@ -47,29 +52,31 @@ class LocalAIEngine {
       case AIIntent.status:
         return _getStatusResponse(income, expense, savings);
       case AIIntent.analysis:
-        return _getAnalysisResponse(income, expense, wants, savings);
+        return _getAnalysisResponse(income, expense, needs, wants, savings);
       case AIIntent.savings:
         return _getSavingsResponse(income, expense, savings);
       case AIIntent.bills:
         return _getBillsResponse(bills, savings);
       case AIIntent.help:
-        return "Saya bisa membantu Anda dengan:\n"
-            "• **Analisis Keuangan**: Tanya 'gimana kondisi keuangan?'\n"
-            "• **Status Saldo**: Tanya 'berapa sisa duit?'\n"
-            "• **Dana Darurat**: Tanya 'tabungan aman gak?'\n"
-            "• **Info Tagihan**: Tanya 'ada tagihan apa?'\n"
-            "Coba tanya saya sekarang!";
+        return "### 🤖 Apa yang bisa saya bantu?\n\n"
+            "Saya adalah asisten finansial Anda. Anda bisa menanyakan hal berikut:\n\n"
+            "* **Analisis Kesehatan**: 'Gimana kondisi keuangan saya?'\n"
+            "* **Status Saldo**: 'Berapa sisa uang saya sekarang?'\n"
+            "* **Dana Darurat**: 'Tabungan saya sudah aman belum?'\n"
+            "* **Info Tagihan**: 'Apa ada tagihan yang harus dibayar?'\n\n"
+            "Silakan ketik pertanyaan Anda di bawah!";
       default:
-        return "Hmm, saya belum paham maksud Anda. Coba tanya tentang 'analisis', 'status', atau 'tagihan'. Saya juga mengerti istilah seperti 'boncos' atau 'cuan'!";
+        return "Hmm, saya belum terlalu mengerti maksud tersebut. 🤔\n\n"
+            "Coba tanya tentang **'analisis'**, **'status'**, atau **'tagihan'**. Saya juga mengerti istilah seperti **'boncos'** atau **'cuan'**!";
     }
   }
 
   AIIntent _detectIntent(String query) {
     if (_containsAny(query, ['halo', 'hi', 'hallo', 'hai', 'pagi', 'siang', 'malam'])) return AIIntent.greeting;
     if (_containsAny(query, ['status', 'saldo', 'duit', 'sisa', 'cuan', 'bokek', 'uang'])) return AIIntent.status;
-    if (_containsAny(query, ['analisis', 'kondisi', 'kabar', 'review', 'gimana', 'boncos', 'boros', 'saran'])) return AIIntent.analysis;
-    if (_containsAny(query, ['tabungan', 'simpanan', 'darurat', 'aman', 'hemat', 'savings'])) return AIIntent.savings;
-    if (_containsAny(query, ['tagihan', 'bayar', 'bills', 'cicilan', 'hutang'])) return AIIntent.bills;
+    if (_containsAny(query, ['analisis', 'kondisi', 'kabar', 'review', 'gimana', 'boncos', 'boros', 'saran', 'kesehatan'])) return AIIntent.analysis;
+    if (_containsAny(query, ['tabungan', 'simpanan', 'darurat', 'aman', 'hemat', 'savings', 'cadangan'])) return AIIntent.savings;
+    if (_containsAny(query, ['tagihan', 'bayar', 'bills', 'cicilan', 'hutang', 'bayaran'])) return AIIntent.bills;
     if (_containsAny(query, ['help', 'tolong', 'bantuan', 'bisa apa'])) return AIIntent.help;
     return AIIntent.unknown;
   }
@@ -79,68 +86,94 @@ class LocalAIEngine {
   }
 
   String _getGreetingResponse(String query) {
-    if (query.contains('pagi')) return "Selamat pagi! Siap mengelola keuangan hari ini?";
-    if (query.contains('siang')) return "Selamat siang! Jangan lupa catat jajan Anda ya.";
-    if (query.contains('malam')) return "Selamat malam! Mari kita review pengeluaran hari ini.";
-    return "Halo! Saya asisten fina. Ada yang bisa saya bantu analisis hari ini?";
+    if (query.contains('pagi')) return "Selamat pagi! ☀️ Siap mengelola keuangan dengan bijak hari ini?";
+    if (query.contains('siang')) return "Selamat siang! 👋 Jangan lupa catat pengeluaran makan siang Anda ya.";
+    if (query.contains('malam')) return "Selamat malam! 🌙 Mari kita review aktivitas finansial Anda hari ini.";
+    return "Halo! Saya asisten **fina**. Ada yang bisa saya bantu analisis hari ini? 😊";
   }
 
   String _getStatusResponse(double income, double expense, double savings) {
-    String status = savings >= 0 ? "aman" : "kritis (boncos)";
-    return "Status Keuangan saat ini:\n"
-        "• Total Pemasukan: **${currencyFormat.format(income)}**\n"
-        "• Total Pengeluaran: **${currencyFormat.format(expense)}**\n"
-        "• Sisa Saldo: **${currencyFormat.format(savings)}**\n\n"
-        "Kondisi Anda saat ini termasuk **$status**. " +
-        (savings < 0 ? "Waspada, pengeluaran lebih besar dari pemasukan!" : "Pertahankan saldo positif Anda!");
+    String statusEmoji = savings >= 0 ? "✅" : "⚠️";
+    String statusTxt = savings >= 0 ? "Surplus (Sehat)" : "Defisit (Boncos)";
+    
+    return "### 💰 Ringkasan Saldo Anda\n\n"
+        "* Total Pemasukan: **${currencyFormat.format(income)}**\n"
+        "* Total Pengeluaran: **${currencyFormat.format(expense)}**\n"
+        "* Sisa Saldo: **${currencyFormat.format(savings)}**\n\n"
+        "Kondisi saat ini: $statusEmoji **$statusTxt**\n\n"
+        "${savings < 0 ? "Waspada! Pengeluaran Anda melebihi pemasukan bulan ini." : "Pertahankan saldo positif Anda untuk tabungan masa depan!"}";
   }
 
-  String _getAnalysisResponse(double income, double expense, double wants, double savings) {
-    if (income <= 0) return "Saya belum bisa menganalisis karena data pemasukan Anda masih kosong. Yuk, catat pemasukan dulu!";
+  String _getAnalysisResponse(double income, double expense, double needs, double wants, double savings) {
+    if (income <= 0) return "⚠️ Saya belum bisa menganalisis karena data **pemasukan** Anda masih kosong. Yuk, catat pemasukan dulu agar saya bisa menghitung rasio kesehatan keuangan Anda!";
 
-    double wantsPercentage = (wants / income) * 100;
+    double needsPerc = (needs / income) * 100;
+    double wantsPerc = (wants / income) * 100;
     double savingsRate = (savings / income) * 100;
 
-    String advice = "";
-    if (wantsPercentage > 30) {
-      advice += "⚠️ Pengeluaran 'Wants' (jajan/hiburan) Anda sudah **${wantsPercentage.toStringAsFixed(1)}%**. Ini di atas batas ideal 30%. Hati-hati jangan sampai kalap!\n\n";
+    String analysis = "### 🏥 Diagnosa Kesehatan Keuangan\n\n";
+
+    // 50/30/20 Rule Analysis
+    analysis += "#### 📊 Alokasi Pengeluaran (Rasio 50/30/20):\n";
+    
+    if (needsPerc > 50) {
+      analysis += "* **Kebutuhan Pokok**: `${needsPerc.toStringAsFixed(1)}%` (⚠️ Melebihi batas ideal 50%)\n";
     } else {
-      advice += "✅ Pengeluaran 'Wants' terkontrol dengan baik di angka **${wantsPercentage.toStringAsFixed(1)}%**. Bagus!\n\n";
+      analysis += "* **Kebutuhan Pokok**: `${needsPerc.toStringAsFixed(1)}%` (✅ Terkontrol)\n";
     }
 
-    if (savingsRate < 20) {
-      advice += "📉 Tabungan Anda baru **${savingsRate.toStringAsFixed(1)}%** dari pemasukan. Coba targetkan minimal 20% untuk masa depan yang lebih tenang.";
+    if (wantsPerc > 30) {
+      analysis += "* **Gaya Hidup (Wants)**: `${wantsPerc.toStringAsFixed(1)}%` (⚠️ Terlalu tinggi! Pertimbangkan untuk memangkas jajan/hiburan)\n";
     } else {
-      advice += "🚀 Luar biasa! Anda berhasil menyisihkan **${savingsRate.toStringAsFixed(1)}%** untuk ditabung. Ini adalah kebiasaan finansial yang sangat sehat.";
+      analysis += "* **Gaya Hidup (Wants)**: `${wantsPerc.toStringAsFixed(1)}%` (✅ Bagus! Anda sangat disiplin)\n";
     }
 
-    return "Hasil Analisis Fina:\n\n$advice";
+    // Savings Rate Analysis
+    analysis += "\n#### 📈 Rasio Tabungan:\n";
+    if (savingsRate < 10) {
+      analysis += "Peringkat: **KRITIS**. Anda baru menyisihkan `${savingsRate.toStringAsFixed(1)}%`. Cobalah untuk menekan biaya admin atau gaya hidup agar bisa nabung minimal 10%.\n";
+    } else if (savingsRate < 20) {
+      analysis += "Peringkat: **CUKUP**. Saldo tersisa `${savingsRate.toStringAsFixed(1)}%`. Sedikit lagi mencapai target ideal 20%!\n";
+    } else {
+      analysis += "Peringkat: **EXCELLENT!** 🚀 Anda berhasil menyisihkan `${savingsRate.toStringAsFixed(1)}%`. Ini adalah fondasi kekayaan yang sangat kuat.\n";
+    }
+
+    return analysis;
   }
 
   String _getSavingsResponse(double income, double expense, double savings) {
-    double avgExpense = expense > 0 ? expense : 1000000; // Mock average if empty
-    double target = avgExpense * 3;
+    double monthlyAvg = expense > 0 ? expense : 1000000;
+    double safetyTarget = monthlyAvg * 3;
+    double runawayMonth = savings / (monthlyAvg > 0 ? monthlyAvg : 1);
     
-    if (savings < target) {
-      double gap = target - savings;
-      return "Tentang Dana Darurat Anda:\n"
-          "Saat ini tabungan Anda belum mencapai zona aman (3x pengeluaran bulanan). Anda butuh sekitar **${currencyFormat.format(gap)}** lagi untuk mencapai target dana darurat **${currencyFormat.format(target)}**. Semangat menabung!";
+    String response = "### 🛡️ Analisis Dana Darurat\n\n";
+    
+    if (savings < safetyTarget) {
+      double missing = safetyTarget - savings;
+      response += "Status: **BELUM AMAN**\n\n"
+          "Anda butuh sekitar **${currencyFormat.format(missing)}** lagi untuk mencapai target dana darurat ideal (**${currencyFormat.format(safetyTarget)}**).\n\n"
+          "💡 *Tips: Sisihkan setidaknya 10% pemasukan khusus untuk pos ini sampai target tercapai.*";
+    } else {
+      response += "Status: **SANGAT AMAN!** 🌟\n\n"
+          "Tabungan Anda saat ini bisa menutupi pengeluaran Anda selama **${runawayMonth.toStringAsFixed(1)} bulan** tanpa pemasukan sama sekali. Anda siap menghadapi situasi tak terduga!";
     }
     
-    return "Dana darurat Anda sudah aman! Anda memiliki cadangan yang cukup untuk menanggung pengeluaran selama setidaknya 3 bulan ke depan. Fokus selanjutnya bisa ke investasi.";
+    return response;
   }
 
   String _getBillsResponse(List<Bill> bills, double savings) {
-    if (bills.isEmpty) return "Sejauh ini tidak ada tagihan terdaftar. Hidup bebas hutang itu melegakan!";
+    if (bills.isEmpty) return "### 🎫 Info Tagihan\n\nSejauh ini tidak ada tagihan terdaftar. Hidup bebas hutang adalah kebahagiaan yang hakiki! 🕊️";
     
     double totalBills = bills.fold(0, (sum, b) => sum + b.amount);
     
-    String response = "Anda memiliki **${bills.length} tagihan** dengan total **${currencyFormat.format(totalBills)}**.\n\n";
+    String response = "### 🎫 Info Tagihan\n\n"
+        "Anda memiliki **${bills.length} item** tagihan bulan ini dengan total pengeluaran **${currencyFormat.format(totalBills)}**.\n\n";
     
     if (savings < totalBills) {
-      response += "⚠️ Perhatian: Saldo Anda saat ini tidak cukup untuk menutup semua tagihan mendatang. Segera siapkan dana agar tidak menunggak!";
+      double gap = totalBills - savings;
+      response += "⚠️ **WASPADA!** Saldo Anda saat ini kurang **${currencyFormat.format(gap)}** untuk melunasi semua tagihan. Cari tambahan pemasukan segera!";
     } else {
-      response += "✅ Saldo Anda saat ini mencukupi untuk membayar semua tagihan. Jangan lupa bayar tepat waktu ya!";
+      response += "✅ **AMAN.** Sisa saldo Anda cukup untuk melunasi seluruh tagihan. Jangan lupa bayar sebelum jatuh tempo ya!";
     }
     
     return response;

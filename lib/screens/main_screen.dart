@@ -1,33 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dashboard_screen.dart';
 import 'bills_screen.dart';
 import 'ai_screen.dart';
 import 'stats_screen.dart';
 import '../theme/colors.dart';
+import '../providers/navigation_provider.dart';
 
-class MainScreen extends StatefulWidget {
+class MainScreen extends ConsumerWidget {
   const MainScreen({super.key});
 
-  @override
-  State<MainScreen> createState() => _MainScreenState();
-}
-
-class _MainScreenState extends State<MainScreen> {
-  int _selectedIndex = 0;
-
-  final List<Widget> _screens = [
-    const DashboardScreen(),
-    const StatsScreen(),
-    const BillsScreen(),
-    const AIScreen(),
+  final List<Widget> _screens = const [
+    DashboardScreen(),
+    StatsScreen(),
+    BillsScreen(),
+    AIScreen(),
   ];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selectedIndex = ref.watch(navigationProvider);
+
     return Scaffold(
       body: Stack(
         children: List.generate(_screens.length, (index) {
-          final isActive = index == _selectedIndex;
+          final isActive = index == selectedIndex;
           return IgnorePointer(
             ignoring: !isActive,
             child: AnimatedOpacity(
@@ -44,8 +41,8 @@ class _MainScreenState extends State<MainScreen> {
           border: Border(top: BorderSide(color: AppColors.borderColor)),
         ),
         child: BottomNavigationBar(
-          currentIndex: _selectedIndex,
-          onTap: (index) => setState(() => _selectedIndex = index),
+          currentIndex: selectedIndex,
+          onTap: (index) => ref.read(navigationProvider.notifier).state = index,
           selectedItemColor: AppColors.textDarkBlue,
           unselectedItemColor: AppColors.textMuted,
           selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 10),
