@@ -1,4 +1,4 @@
-enum TransactionType { income, expense }
+enum TransactionType { income, expense, transfer, initial }
 
 class Transaction {
   final int? id;
@@ -8,6 +8,9 @@ class Transaction {
   final String category;
   final DateTime date;
   final String? note;
+  final int walletId;
+  final int? toWalletId;
+  final double adminFee;
 
   Transaction({
     this.id,
@@ -17,6 +20,9 @@ class Transaction {
     required this.category,
     required this.date,
     this.note,
+    required this.walletId,
+    this.toWalletId,
+    this.adminFee = 0,
   });
 
   Map<String, dynamic> toMap() {
@@ -28,6 +34,9 @@ class Transaction {
       'category': category,
       'date': date.toIso8601String(),
       'note': note,
+      'walletId': walletId,
+      'toWalletId': toWalletId,
+      'adminFee': adminFee,
     };
   }
 
@@ -40,6 +49,9 @@ class Transaction {
       category: map['category'],
       date: DateTime.parse(map['date']),
       note: map['note'],
+      walletId: map['walletId'] ?? 1, // Default to 1 for migration safety
+      toWalletId: map['toWalletId'],
+      adminFee: (map['adminFee'] ?? 0).toDouble(),
     );
   }
 }

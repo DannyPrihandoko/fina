@@ -2,11 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/database_provider.dart';
 import '../models/transaction.dart';
+import '../models/wallet.dart';
 import '../theme/colors.dart';
 import '../utils/currency_formatter.dart';
 
 class AddTransactionScreen extends ConsumerStatefulWidget {
-  const AddTransactionScreen({super.key});
+  final double? initialAmount;
+  final String? initialTitle;
+  final String? initialCategory;
+
+  const AddTransactionScreen({
+    super.key,
+    this.initialAmount,
+    this.initialTitle,
+    this.initialCategory,
+  });
 
   @override
   ConsumerState<AddTransactionScreen> createState() => _AddTransactionScreenState();
@@ -14,10 +24,14 @@ class AddTransactionScreen extends ConsumerStatefulWidget {
 
 class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
-  final _amountController = TextEditingController();
+  late TextEditingController _titleController;
+  late TextEditingController _amountController;
+  final _adminFeeController = TextEditingController();
   TransactionType _type = TransactionType.expense;
-  String _category = 'Makanan';
+  late String _category;
+  int? _selectedWalletId;
+  int? _targetWalletId;
+  bool _isAutoFilled = false;
 
   final List<String> _categories = [
     'Makanan',
@@ -25,25 +39,63 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
     'Transportasi',
     'Hiburan',
     'Kesehatan',
+    'Cicilan',
     'Lainnya',
-    'Pendapatan',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _category = widget.initialCategory ?? 'Makanan';
+    _titleController = TextEditingController(text: widget.initialTitle);
+    
+    // Formatting initial amount if present
+    String initialAmountText = '';
+    if (widget.initialAmount != null && widget.initialAmount! > 0) {
+      initialAmountText = NumberFormat.currency(locale: 'id_ID', symbol: '', decimalDigits: 0)
+          .format(widget.initialAmount).trim();
+      _isAutoFilled = true;
+    }
+    _amountController = TextEditingController(text: initialAmountText);
+
+    // Pre-select first wallet if available
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final wallets = ref.read(walletsProvider);
+      if (wallets.isNotEmpty) {
+        setState(() => _selectedWalletId = wallets.first.id);
+      }
+    });
+  }
 
   @override
   void dispose() {
     _titleController.dispose();
     _amountController.dispose();
+    _adminFeeController.dispose();
     super.dispose();
   }
 
   void _saveTransaction() {
     if (_formKey.currentState!.validate()) {
+      if (_selectedWalletId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pilih dompet terlebih dahulu')));
+        return;
+      }
+
+      if (_type == TransactionType.transfer && _targetWalletId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pilih dompet tujuan')));
+        return;
+      }
+
       final tx = Transaction(
         title: _titleController.text,
         amount: CurrencyUtils.parse(_amountController.text).abs(),
         type: _type,
-        category: _category,
+        category: _type == TransactionType.transfer ? 'Transfer' : _category,
         date: DateTime.now(),
+        walletId: _selectedWalletId!,
+        toWalletId: _type == TransactionType.transfer ? _targetWalletId : null,
+        adminFee: CurrencyUtils.parse(_adminFeeController.text).abs(),
       );
 
       ref.read(transactionsProvider.notifier).addTransaction(tx);
@@ -60,6 +112,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final wallets = ref.watch(walletsProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Tambah Transaksi', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -71,7 +125,30 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Type Selector
+              if (_isAutoFilled)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  margin: const EdgeInsets.only(bottom: 24),
+                  decoration: BoxDecoration(
+                    color: AppColors.ctaAqua.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.ctaAqua.withOpacity(0.3)),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.auto_awesome_rounded, color: AppColors.ctaAqua, size: 20),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Data berhasil diisi otomatis melalui AI Scan.',
+                          style: TextStyle(color: AppColors.textDarkBlue, fontSize: 13, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+              // Type Selector (Expense, Income, Transfer)
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
@@ -80,32 +157,31 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                 ),
                 child: Row(
                   children: [
-                    Expanded(
-                      child: _buildTypeButton(
-                        'PENGELUARAN',
-                        TransactionType.expense,
-                        _type == TransactionType.expense,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _buildTypeButton(
-                        'PENDAPATAN',
-                        TransactionType.income,
-                        _type == TransactionType.income,
-                      ),
-                    ),
+                    Expanded(child: _buildTypeButton('PENGELUARAN', TransactionType.expense)),
+                    const SizedBox(width: 4),
+                    Expanded(child: _buildTypeButton('PENDAPATAN', TransactionType.income)),
+                    const SizedBox(width: 4),
+                    Expanded(child: _buildTypeButton('TRANSFER', TransactionType.transfer)),
                   ],
                 ),
               ),
               const SizedBox(height: 32),
 
+              // Wallet Selection Logic
+              if (_type == TransactionType.transfer) ...[
+                _buildLabel('DARI DOMPET'),
+                _buildWalletDropdown(wallets, _selectedWalletId, (val) => setState(() => _selectedWalletId = val)),
+                const SizedBox(height: 20),
+                _buildLabel('KE DOMPET'),
+                _buildWalletDropdown(wallets, _targetWalletId, (val) => setState(() => _targetWalletId = val)),
+              ] else ...[
+                _buildLabel('PILIH DOMPET'),
+                _buildWalletDropdown(wallets, _selectedWalletId, (val) => setState(() => _selectedWalletId = val)),
+              ],
+              const SizedBox(height: 32),
+
               // Amount Input
-              Text(
-                'JUMLAH',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(letterSpacing: 1.5),
-              ),
-              const SizedBox(height: 8),
+              _buildLabel('JUMLAH'),
               TextFormField(
                 controller: _amountController,
                 keyboardType: TextInputType.number,
@@ -123,28 +199,30 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                   return null;
                 },
               ),
+
+              if (_type == TransactionType.transfer) ...[
+                _buildLabel('BIAYA ADMIN (OPSIONAL)'),
+                TextFormField(
+                  controller: _adminFeeController,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [ThousandSeparatorFormatter()],
+                  decoration: const InputDecoration(prefixText: 'Rp ', hintText: '0'),
+                ),
+                const SizedBox(height: 32),
+              ],
+
               const SizedBox(height: 32),
 
               // Title Input
-              Text(
-                'KETERANGAN',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(letterSpacing: 1.5),
-              ),
-              const SizedBox(height: 8),
+              _buildLabel('KETERANGAN'),
               TextFormField(
                 controller: _titleController,
                 decoration: InputDecoration(
-                  hintText: 'Misal: Makan Siang',
+                  hintText: _type == TransactionType.transfer ? 'Misal: Tarik Tunai' : 'Misal: Makan Siang',
                   filled: true,
                   fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.borderColor),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.borderColor),
-                  ),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.borderColor)),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.borderColor)),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) return 'Masukkan keterangan';
@@ -153,39 +231,29 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
               ),
               const SizedBox(height: 32),
 
-              // Category Selector
-              Text(
-                'KATEGORI',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(letterSpacing: 1.5),
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _categories.map((cat) {
-                  final isSelected = _category == cat;
-                  return ChoiceChip(
-                    label: Text(cat),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      if (selected) setState(() => _category = cat);
-                    },
-                    selectedColor: AppColors.ctaAqua,
-                    backgroundColor: Colors.white,
-                    labelStyle: TextStyle(
-                      color: isSelected ? AppColors.textDarkBlue : AppColors.textMuted,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      side: BorderSide(color: isSelected ? AppColors.ctaAqua : AppColors.borderColor),
-                    ),
-                    showCheckmark: false,
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 48),
+              // Category Selector (only for income/expense)
+              if (_type != TransactionType.transfer) ...[
+                _buildLabel('KATEGORI'),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _categories.map((cat) {
+                    final isSelected = _category == cat;
+                    return ChoiceChip(
+                      label: Text(cat),
+                      selected: isSelected,
+                      onSelected: (selected) => selected ? setState(() => _category = cat) : null,
+                      selectedColor: AppColors.ctaAqua,
+                      backgroundColor: Colors.white,
+                      labelStyle: TextStyle(color: isSelected ? AppColors.textDarkBlue : AppColors.textMuted, fontWeight: FontWeight.bold, fontSize: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide(color: isSelected ? AppColors.ctaAqua : AppColors.borderColor)),
+                      showCheckmark: false,
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 48),
+              ],
 
               // Submit Button
               SizedBox(
@@ -193,7 +261,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                 height: 56,
                 child: ElevatedButton(
                   onPressed: _saveTransaction,
-                  child: const Text('SIMPAN TRANSAKSI', style: TextStyle(letterSpacing: 1)),
+                  child: Text(_type == TransactionType.transfer ? 'LAKUKAN TRANSFER' : 'SIMPAN TRANSAKSI', style: const TextStyle(letterSpacing: 1)),
                 ),
               ),
             ],
@@ -203,7 +271,44 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
     );
   }
 
-  Widget _buildTypeButton(String label, TransactionType type, bool isSelected) {
+  Widget _buildLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Text(text, style: Theme.of(context).textTheme.bodySmall?.copyWith(letterSpacing: 1.5, fontWeight: FontWeight.bold)),
+    );
+  }
+
+  Widget _buildWalletDropdown(List<Wallet> wallets, int? selectedId, Function(int?) onChanged) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.borderColor),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<int>(
+          value: selectedId,
+          hint: const Text('Pilih Dompet'),
+          isExpanded: true,
+          items: wallets.map((w) => DropdownMenuItem(
+            value: w.id,
+            child: Row(
+              children: [
+                Icon(Wallet.getIcon(w.type), size: 18, color: w.color),
+                const SizedBox(width: 12),
+                Text(w.name, style: const TextStyle(fontWeight: FontWeight.w500)),
+              ],
+            ),
+          )).toList(),
+          onChanged: onChanged,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTypeButton(String label, TransactionType type) {
+    final isSelected = _type == type;
     return GestureDetector(
       onTap: () => setState(() => _type = type),
       child: Container(
@@ -215,11 +320,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
         child: Center(
           child: Text(
             label,
-            style: TextStyle(
-              color: isSelected ? Colors.white : AppColors.textMuted,
-              fontWeight: FontWeight.w800,
-              fontSize: 10,
-            ),
+            style: TextStyle(color: isSelected ? Colors.white : AppColors.textMuted, fontWeight: FontWeight.w800, fontSize: 9),
           ),
         ),
       ),

@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:percent_indicator/percent_indicator.dart';
 import '../providers/database_provider.dart';
 import '../models/transaction.dart';
+import '../models/budget.dart';
 import '../theme/colors.dart';
 
 class StatsScreen extends ConsumerStatefulWidget {
@@ -20,6 +20,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
   @override
   Widget build(BuildContext context) {
     final transactions = ref.watch(transactionsProvider);
+    final budgets = ref.watch(budgetsProvider);
     final filteredTx = _filterTransactions(transactions, _timeRange);
 
     double totalIncome = 0;
@@ -29,7 +30,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     for (var tx in filteredTx) {
       if (tx.type == TransactionType.income) {
         totalIncome += tx.amount;
-      } else {
+      } else if (tx.type == TransactionType.expense) {
         totalExpense += tx.amount;
         categorySums[tx.category] = (categorySums[tx.category] ?? 0) + tx.amount;
       }
@@ -41,88 +42,132 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
       ..sort((a, b) => b.value.compareTo(a.value));
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      extendBodyBehindAppBar: true,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Rekapitulasi', style: TextStyle(fontWeight: FontWeight.w900)),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text('Rekapitulasi', style: TextStyle(fontWeight: FontWeight.w900, color: Colors.white)),
         centerTitle: false,
       ),
-      body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          // Filter Section
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    _buildFilterChip('7D'),
-                    _buildFilterChip('30D'),
-                    _buildFilterChip('Bulan Ini'),
-                    _buildFilterChip('Bulan Lalu'),
-                  ],
-                ),
+      body: Stack(
+        children: [
+          // BACKGROUND GRADIENT
+          Container(
+            height: 350,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: AppColors.mainGradient,
               ),
             ),
           ),
 
-          // Main Summary Card
-          SliverToBoxAdapter(
-            child: _buildMainSummaryCard(netBalance, totalIncome, totalExpense, currencyFormat),
-          ),
-
-          // Chart Section
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              SliverPadding(
+                padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 64),
+                sliver: SliverToBoxAdapter(
+                  child: Column(
                     children: [
-                      const Text(
-                        'Tren Keuangan',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.textDarkBlue),
+                      // Filter Section
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              _buildFilterChip('7D'),
+                              _buildFilterChip('30D'),
+                              _buildFilterChip('Bulan Ini'),
+                              _buildFilterChip('Bulan Lalu'),
+                            ],
+                          ),
+                        ),
                       ),
-                      Icon(Icons.auto_graph_rounded, color: AppColors.ctaAqua.withValues(alpha: 0.8)),
+                      const SizedBox(height: 24),
+
+                      // Main Summary Card (Glassmorphic)
+                      _buildMainSummaryCard(netBalance, totalIncome, totalExpense, currencyFormat),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  _buildTrendChart(filteredTx, _timeRange),
-                ],
+                ),
               ),
-            ),
-          ),
 
-          // Category Insights Section
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Detail Pengeluaran',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.textDarkBlue),
+              // Chart Section
+              SliverToBoxAdapter(
+                child: Container(
+                  margin: const EdgeInsets.only(top: 32),
+                  decoration: const BoxDecoration(
+                    color: AppColors.background,
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
                   ),
-                  const SizedBox(height: 16),
-                  if (sortedCategories.isEmpty)
-                    _buildEmptyState('Tidak ada data pengeluaran.')
-                  else
-                    ...sortedCategories.map((entry) => _buildCategoryCard(
-                          entry.key,
-                          entry.value,
-                          totalExpense,
-                          currencyFormat,
-                        )),
-                ],
-              ),
-            ),
-          ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Tren Arus Kas',
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.textDarkBlue),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(color: AppColors.ctaAqua.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                              child: const Text('LIVE', style: TextStyle(color: AppColors.ctaAqua, fontWeight: FontWeight.w900, fontSize: 10)),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: _buildTrendChart(filteredTx, _timeRange),
+                      ),
+                      
+                      const SizedBox(height: 32),
 
-          const SliverToBoxAdapter(child: SizedBox(height: 100)),
+                      // Category Insights Section
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Detail Pengeluaran',
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.textDarkBlue),
+                            ),
+                            const SizedBox(height: 4),
+                            const Text('Ketuk kategori untuk mengatur anggaran', style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                            const SizedBox(height: 24),
+                            if (sortedCategories.isEmpty)
+                              _buildEmptyState('Tidak ada data pengeluaran.')
+                            else
+                              ...sortedCategories.map((entry) => _buildCategoryCard(
+                                    entry.key,
+                                    entry.value,
+                                    totalExpense,
+                                    currencyFormat,
+                                    budgets,
+                                  )),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 120),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -140,92 +185,76 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
         start = DateTime(now.year, now.month, now.day).subtract(const Duration(days: 29));
         return list.where((tx) => tx.date.isAfter(start.subtract(const Duration(seconds: 1)))).toList();
       case 'Bulan Ini':
-        start = DateTime(now.year, now.month, 1);
         return list.where((tx) => tx.date.year == now.year && tx.date.month == now.month).toList();
       case 'Bulan Lalu':
         final prevMonth = DateTime(now.year, now.month - 1, 1);
-        return list.where((tx) => tx.date.year == prevMonth.year && tx.date.month == prevMonth.month).toList();
+        final monthEnd = DateTime(now.year, now.month, 0, 23, 59, 59);
+        return list.where((tx) => tx.date.isAfter(prevMonth.subtract(const Duration(seconds: 1))) && tx.date.isBefore(monthEnd)).toList();
       default:
         return list;
     }
   }
 
   Widget _buildMainSummaryCard(double net, double income, double expense, NumberFormat format) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: AppColors.mainGradient,
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(28),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(32),
+          border: Border.all(color: Colors.white.withOpacity(0.2)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+          ],
         ),
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.textDarkBlue.withValues(alpha: 0.25),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            right: -20,
-            top: -20,
-            child: CircleAvatar(
-              radius: 60,
-              backgroundColor: Colors.white.withValues(alpha: 0.05),
+        child: Column(
+          children: [
+            const Text(
+              'SELISIH KAS PERIODE INI',
+              style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'SALDO BERSIH PERIODE INI',
-                  style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  format.format(net),
-                  style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w900),
-                ),
-                const SizedBox(height: 24),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildSummaryItem('Pemasukan', income, AppColors.ctaAqua),
-                      Container(width: 1, height: 30, color: Colors.white24),
-                      _buildSummaryItem('Pengeluaran', expense, Colors.redAccent),
-                    ],
-                  ),
-                ),
-              ],
+            const SizedBox(height: 12),
+            Text(
+              format.format(net),
+              style: const TextStyle(color: Colors.white, fontSize: 34, fontWeight: FontWeight.w900, letterSpacing: -0.5),
             ),
-          ),
-        ],
+            const SizedBox(height: 28),
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildSummaryItem('Pemasukan', income, AppColors.ctaAqua),
+                  Container(width: 1, height: 30, color: Colors.white12),
+                  _buildSummaryItem('Pengeluaran', expense, Colors.redAccent),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildSummaryItem(String label, double amount, Color color) {
-    final format = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp', decimalDigits: 0);
+    final format = NumberFormat.compactCurrency(symbol: 'Rp', locale: 'id_ID');
     return Column(
       children: [
         Text(label, style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 4),
+        const SizedBox(height: 6),
         Text(
           format.format(amount),
-          style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.w900),
+          style: TextStyle(color: color, fontSize: 15, fontWeight: FontWeight.w900),
         ),
       ],
     );
@@ -243,7 +272,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
       days = 30;
       start = DateTime(now.year, now.month, now.day).subtract(const Duration(days: 29));
     } else if (range == 'Bulan Ini') {
-      days = DateTime(now.year, now.month, 0).day;
+      days = DateTime(now.year, now.month + 1, 0).day;
       start = DateTime(now.year, now.month, 1);
     } else {
       final prev = DateTime(now.year, now.month - 1, 1);
@@ -251,20 +280,15 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
       start = prev;
     }
 
-    Map<int, double> dailyIncome = {};
-    Map<int, double> dailyExpense = {};
-
-    for (int i = 0; i < days; i++) {
-      dailyIncome[i] = 0;
-      dailyExpense[i] = 0;
-    }
+    Map<int, double> dailyIncome = Map.fromIterable(List.generate(days, (i) => i), value: (_) => 0.0);
+    Map<int, double> dailyExpense = Map.fromIterable(List.generate(days, (i) => i), value: (_) => 0.0);
 
     for (var tx in list) {
       final diff = tx.date.difference(start).inDays;
       if (diff >= 0 && diff < days) {
         if (tx.type == TransactionType.income) {
           dailyIncome[diff] = (dailyIncome[diff] ?? 0) + tx.amount;
-        } else {
+        } else if (tx.type == TransactionType.expense) {
           dailyExpense[diff] = (dailyExpense[diff] ?? 0) + tx.amount;
         }
       }
@@ -278,13 +302,13 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
             toY: dailyIncome[index]!,
             color: AppColors.ctaAqua,
             width: days > 10 ? 4 : 10,
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
           ),
           BarChartRodData(
             toY: dailyExpense[index]!,
-            color: AppColors.textDarkBlue.withValues(alpha: 0.3),
+            color: AppColors.textMuted.withOpacity(0.2),
             width: days > 10 ? 4 : 10,
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
           ),
         ],
       );
@@ -296,17 +320,16 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     if (maxVal == 0) maxVal = 1000;
 
     return Container(
-      height: 260,
+      height: 240,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.borderColor.withValues(alpha: 0.5)),
+        borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
+            color: AppColors.borderColor.withOpacity(0.2),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -314,17 +337,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
         BarChartData(
           alignment: BarChartAlignment.spaceAround,
           maxY: maxVal * 1.3,
-          barTouchData: BarTouchData(
-            enabled: true,
-            touchTooltipData: BarTouchTooltipData(
-              getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                return BarTooltipItem(
-                  NumberFormat.compactCurrency(symbol: 'Rp', locale: 'id_ID').format(rod.toY),
-                  const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
-                );
-              },
-            ),
-          ),
+          barTouchData: BarTouchData(enabled: true),
           titlesData: FlTitlesData(
             show: true,
             bottomTitles: AxisTitles(
@@ -337,7 +350,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                     padding: const EdgeInsets.only(top: 10),
                     child: Text(
                       DateFormat(days > 7 ? 'dd' : 'E').format(date),
-                      style: const TextStyle(color: AppColors.textMuted, fontSize: 10, fontWeight: FontWeight.bold),
+                      style: const TextStyle(color: AppColors.textMuted, fontSize: 10, fontWeight: FontWeight.w900),
                     ),
                   );
                 },
@@ -355,67 +368,145 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     );
   }
 
-  Widget _buildCategoryCard(String category, double amount, double total, NumberFormat format) {
-    final percentage = total == 0 ? 0.0 : amount / total;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.borderColor.withValues(alpha: 0.5)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+  Widget _buildCategoryCard(String category, double amount, double total, NumberFormat format, List<Budget> budgets) {
+    final percentageOfTotal = total == 0 ? 0.0 : amount / total;
+    final budget = budgets.where((b) => b.category == category).firstOrNull;
+    final hasBudget = budget != null;
+    final budgetLimit = budget?.limitAmount ?? 0;
+    final budgetUsage = hasBudget ? (amount / budgetLimit).clamp(0.0, 1.0) : 0.0;
+    final isExceeded = hasBudget && amount > budgetLimit;
+
+    return GestureDetector(
+      onTap: () => _showBudgetDialog(context, category, budget?.limitAmount),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 20),
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.borderColor.withOpacity(0.2),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+          border: Border.all(
+            color: isExceeded ? Colors.red.withOpacity(0.2) : Colors.transparent,
+            width: 1.5,
           ),
-        ],
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: _getCategoryColor(category).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(_getCategoryIcon(category), color: _getCategoryColor(category), size: 24),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(category.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 10, color: AppColors.textMuted, letterSpacing: 1.2)),
+                      const SizedBox(height: 4),
+                      if (hasBudget)
+                        Row(
+                          children: [
+                            Text(
+                              format.format(amount),
+                              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: isExceeded ? Colors.red : AppColors.textDarkBlue),
+                            ),
+                            Text(
+                              ' / ${format.format(budgetLimit)}',
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textMuted),
+                            ),
+                          ],
+                        )
+                      else
+                        Text(format.format(amount), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: AppColors.textDarkBlue)),
+                    ],
+                  ),
+                ),
+                Icon(isExceeded ? Icons.warning_amber_rounded : Icons.chevron_right_rounded, 
+                     color: isExceeded ? Colors.red : AppColors.textMuted.withOpacity(0.5)),
+              ],
+            ),
+            const SizedBox(height: 20),
+            if (hasBudget)
+              Column(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: LinearProgressIndicator(
+                      value: budgetUsage,
+                      minHeight: 10,
+                      backgroundColor: AppColors.borderColor.withOpacity(0.2),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        isExceeded ? Colors.red : (budgetUsage > 0.8 ? Colors.orange : AppColors.ctaAqua),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        isExceeded ? 'Melebihi Anggaran' : 'Sisa Anggaran: ${format.format(budgetLimit - amount)}',
+                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: isExceeded ? Colors.red : AppColors.textMuted),
+                      ),
+                      Text('${(budgetUsage * 100).toInt()}%', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: AppColors.textDarkBlue)),
+                    ],
+                  ),
+                ],
+              )
+            else
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: LinearProgressIndicator(
+                  value: percentageOfTotal,
+                  minHeight: 6,
+                  backgroundColor: AppColors.borderColor.withOpacity(0.2),
+                  valueColor: AlwaysStoppedAnimation<Color>(_getCategoryColor(category).withOpacity(0.5)),
+                ),
+              ),
+          ],
+        ),
       ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: _getCategoryColor(category).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(_getCategoryIcon(category), color: _getCategoryColor(category), size: 20),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      category,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.textDarkBlue),
-                    ),
-                    Text(
-                      '${(percentage * 100).toStringAsFixed(1)}% dari pengeluaran',
-                      style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
-                    ),
-                  ],
-                ),
-              ),
-              Text(
-                format.format(amount),
-                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: AppColors.textDarkBlue),
-              ),
-            ],
+    );
+  }
+
+  void _showBudgetDialog(BuildContext context, String category, double? currentLimit) {
+    final controller = TextEditingController(text: currentLimit?.toStringAsFixed(0));
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        title: Text('Atur Anggaran: $category', style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.textDarkBlue)),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          autofocus: true,
+          decoration: InputDecoration(
+            labelText: 'Batas Maksimal Bulanan',
+            prefixText: 'Rp ',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
           ),
-          const SizedBox(height: 16),
-          LinearPercentIndicator(
-            lineHeight: 8.0,
-            percent: percentage,
-            padding: EdgeInsets.zero,
-            backgroundColor: AppColors.borderColor.withValues(alpha: 0.3),
-            progressColor: _getCategoryColor(category),
-            barRadius: const Radius.circular(10),
-            animation: true,
-            animationDuration: 1000,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('BATAL', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textMuted))),
+          ElevatedButton(
+            onPressed: () {
+              final amount = double.tryParse(controller.text) ?? 0;
+              ref.read(budgetsProvider.notifier).setBudget(category, amount);
+              Navigator.pop(context);
+            },
+            child: const Text('SIMPAN'),
           ),
         ],
       ),
@@ -427,16 +518,15 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     return GestureDetector(
       onTap: () => setState(() => _timeRange = label),
       child: Container(
-        margin: const EdgeInsets.only(right: 8),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.textDarkBlue : AppColors.cardPaleBlue.withValues(alpha: 0.3),
+          color: isSelected ? AppColors.textDarkBlue : AppColors.cardPaleBlue.withOpacity(0.3),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.white : AppColors.textDarkBlue.withValues(alpha: 0.7),
+            color: isSelected ? Colors.white : AppColors.textDarkBlue.withOpacity(0.7),
             fontWeight: FontWeight.bold,
             fontSize: 12,
           ),
@@ -447,12 +537,13 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
 
   IconData _getCategoryIcon(String category) {
     switch (category.toLowerCase()) {
-      case 'makanan': return Icons.fastfood_rounded;
-      case 'belanja': return Icons.shopping_bag_rounded;
-      case 'transportasi': return Icons.directions_car_rounded;
-      case 'hiburan': return Icons.movie_rounded;
-      case 'kesehatan': return Icons.medical_services_rounded;
-      default: return Icons.category_rounded;
+      case 'makanan': return Icons.restaurant_rounded;
+      case 'belanja': return Icons.shopping_bag_outlined;
+      case 'transportasi': return Icons.directions_bus_filled_outlined;
+      case 'hiburan': return Icons.movie_filter_outlined;
+      case 'kesehatan': return Icons.health_and_safety_outlined;
+      case 'transfer': return Icons.swap_horiz_rounded;
+      default: return Icons.category_outlined;
     }
   }
 
@@ -469,16 +560,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
 
   Widget _buildEmptyState(String message) {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 40),
-        child: Column(
-          children: [
-            Icon(Icons.analytics_outlined, size: 64, color: AppColors.textMuted.withValues(alpha: 0.2)),
-            const SizedBox(height: 16),
-            Text(message, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.textMuted)),
-          ],
-        ),
-      ),
+      child: Padding(padding: const EdgeInsets.symmetric(vertical: 40), child: Text(message, style: const TextStyle(color: AppColors.textMuted))),
     );
   }
 }

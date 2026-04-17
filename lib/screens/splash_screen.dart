@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'main_screen.dart';
 import '../theme/colors.dart';
 
+import 'package:flutter_native_splash/flutter_native_splash.dart';
+
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -18,6 +20,9 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   @override
   void initState() {
     super.initState();
+    // Remove native splash when Flutter UI starts rendering
+    FlutterNativeSplash.remove();
+
     _controller = AnimationController(
        vsync: this,
        duration: const Duration(milliseconds: 1500),
@@ -55,7 +60,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.textDarkBlue,
       body: Center(
         child: FadeTransition(
           opacity: _fadeAnimation,
@@ -65,42 +70,36 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(24),
+                  width: 160,
+                  height: 160,
+                  padding: const EdgeInsets.all(32),
                   decoration: BoxDecoration(
-                    color: AppColors.white,
+                    color: Colors.white.withOpacity(0.1),
                     shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
                   ),
-                  child: const Icon(
-                    Icons.account_balance_wallet_rounded,
-                    size: 80,
-                    color: AppColors.textDarkBlue,
+                  child: Image.asset(
+                    'assets/icon/logo_apps.png',
+                    fit: BoxFit.contain,
                   ),
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 40),
                 Text(
                   'FINA',
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 48,
+                    fontSize: 42,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 8,
-                    color: AppColors.textDarkBlue,
+                    color: Colors.white,
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
                 Text(
                   'PERSONAL CASH FLOW',
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 14,
+                    fontSize: 12,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 4,
-                    color: AppColors.textMuted,
+                    color: Colors.white.withOpacity(0.6),
                   ),
                 ),
               ],

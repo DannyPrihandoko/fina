@@ -6,10 +6,19 @@ import 'package:fina/services/notification_service.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fina/providers/settings_provider.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await NotificationService().init();
+  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+  
+  try {
+    await NotificationService().init();
+  } catch (e) {
+    debugPrint('Notification initialization failed: $e');
+  }
+
   final sharedPrefs = await SharedPreferences.getInstance();
   runApp(
     ProviderScope(

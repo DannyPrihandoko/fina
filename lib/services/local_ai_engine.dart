@@ -178,4 +178,55 @@ class LocalAIEngine {
     
     return response;
   }
+
+  /// Extracts amount and suggests category from raw OCR text
+  Map<String, dynamic> extractReceiptData(String rawText) {
+    final cleanText = rawText.toLowerCase();
+    
+    // 1. Extract Amounts using Regex
+    // Look for patterns like "10.000", "50,000", "Rp 15000"
+    final amountRegex = RegExp(r'(?:\d{1,3}(?:\.\d{3})+|\d{4,})');
+    final matches = amountRegex.allMatches(rawText.replaceAll(',', ''));
+    
+    List<double> amounts = [];
+    for (var match in matches) {
+      final val = double.tryParse(match.group(0) ?? '0');
+      if (val != null && val > 100) { // Filter out tiny numbers (likely dates or quantities)
+        amounts.add(val);
+      }
+    }
+
+    // Heuristic: The largest amount is usually the Total
+    double totalAmount = amounts.isNotEmpty ? amounts.reduce((a, b) => a > b ? a : b) : 0;
+
+    // 2. Suggest Category based on keywords
+    String category = 'Lainnya';
+    if (_containsAny(cleanText, ['makan', 'resto', 'cafe', 'kopi', 'bakery', 'warung', 'food', 'drink', 'mart', 'starbucks', 'kfc', 'mcd'])) {
+      category = 'Makanan';
+    } else if (_containsAny(cleanText, ['beli', 'shop', 'store', 'indomaret', 'alfamart', 'supermarket', 'mall', 'transmart', 'tokopedia', 'shopee'])) {
+      category = 'Belanja';
+    } else if (_containsAny(cleanText, ['grab', 'gojek', 'uber', 'taxi', 'bensin', 'shell', 'pertamina', 'parking', 'parkir', 'tol', 'travel'])) {
+      category = 'Transportasi';
+    } else if (_containsAny(cleanText, ['nonton', 'cinema', 'xxi', 'cgv', 'game', 'spotify', 'netflix', 'hobby', 'hobi', 'wisata'])) {
+      category = 'Hiburan';
+    } else if (_containsAny(cleanText, ['apotek', 'obat', 'rs ', 'rumah sakit', 'klinik', 'doctor', 'dokter', 'sehat', 'health'])) {
+      category = 'Kesehatan';
+    }
+
+    // 3. Extract Title (First non-numeric line or a known merchant)
+    String title = 'Transaksi Scan';
+    final lines = rawText.split('\n');
+    for (var line in lines) {
+      if (line.trim().length > 3 && !RegExp(r'\d').hasMatch(line)) {
+        title = line.trim();
+        break;
+      }
+    }
+
+    return {
+      'amount': totalAmount,
+      'category': category,
+      'title': title,
+    };
+  }
 }

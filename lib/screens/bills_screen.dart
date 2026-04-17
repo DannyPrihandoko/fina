@@ -15,97 +15,174 @@ class BillsScreen extends ConsumerWidget {
     final bills = ref.watch(billsProvider);
     final currencyFormat = NumberFormat.currency(symbol: 'Rp', decimalDigits: 0);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Tagihan', style: TextStyle(fontWeight: FontWeight.bold)),
-      ),
-      body: bills.isEmpty
-          ? _buildEmptyState(context)
-          : ListView.builder(
-              padding: const EdgeInsets.all(20),
-              itemCount: bills.length,
-              itemBuilder: (context, index) {
-                final bill = bills[index];
-                
-                // Due soon logic (3 days)
-                final now = DateTime.now();
-                final diff = bill.dueDate.difference(DateTime(now.year, now.month, now.day)).inDays;
-                final isDueSoon = diff >= 0 && diff <= 3;
-                final isOverdue = diff < 0;
+    // Calculate total bills this month
+    double totalBills = 0;
+    for (var b in bills) {
+      totalBills += b.amount;
+    }
 
-                return Dismissible(
-                  key: Key('bill_${bill.id}'),
-                  direction: DismissDirection.endToStart,
-                  background: Container(
-                    margin: const EdgeInsets.only(bottom: 16),
-                    alignment: Alignment.centerRight,
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    decoration: BoxDecoration(
-                      color: Colors.redAccent.withValues(alpha: 0.8),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Icon(Icons.delete_outline, color: Colors.white),
+    return Scaffold(
+      extendBodyBehindAppBar: true,
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text('Tagihan Rutin', style: TextStyle(fontWeight: FontWeight.w900, color: Colors.white)),
+        centerTitle: false,
+      ),
+      body: Stack(
+        children: [
+          // BACKGROUND GRADIENT
+          Container(
+            height: 350,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: AppColors.mainGradient,
+              ),
+            ),
+          ),
+
+          CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              SliverPadding(
+                padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 64, left: 20, right: 20),
+                sliver: SliverToBoxAdapter(
+                  child: Column(
+                    children: [
+                      // Monthly Bills Summary (Glassmorphic)
+                      _buildBillsSummary(totalBills, currencyFormat),
+                      const SizedBox(height: 32),
+                    ],
                   ),
-                  onDismissed: (direction) {
-                    ref.read(billsProvider.notifier).removeBill(bill.id!);
-                    NotificationService().cancelBillReminders(bill.id!);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Tagihan ${bill.title} dihapus'),
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        action: SnackBarAction(
-                          label: 'URUNG',
-                          onPressed: () {
-                            ref.read(billsProvider.notifier).addBill(bill);
-                          },
+                ),
+              ),
+
+              SliverToBoxAdapter(
+                child: Container(
+                  width: double.infinity,
+                  decoration: const BoxDecoration(
+                    color: AppColors.background,
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.fromLTRB(28, 32, 28, 16),
+                        child: Text(
+                          'Daftar Tagihan',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.textDarkBlue),
                         ),
                       ),
-                    );
-                  },
-                  child: _buildBillCard(context, bill, currencyFormat, isDueSoon, isOverdue),
-                );
-              },
-            ),
-      floatingActionButton: FloatingActionButton(
+                      if (bills.isEmpty)
+                        _buildEmptyState(context)
+                      else
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Column(
+                            children: bills.map((bill) {
+                              // Due soon logic (3 days)
+                              final now = DateTime.now();
+                              final diff = bill.dueDate.difference(DateTime(now.year, now.month, now.day)).inDays;
+                              final isDueSoon = diff >= 0 && diff <= 3;
+                              final isOverdue = diff < 0;
+
+                              return Dismissible(
+                                key: Key('bill_${bill.id}'),
+                                direction: DismissDirection.endToStart,
+                                background: Container(
+                                  margin: const EdgeInsets.only(bottom: 16),
+                                  alignment: Alignment.centerRight,
+                                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                                  decoration: BoxDecoration(
+                                    color: Colors.redAccent.withOpacity(0.8),
+                                    borderRadius: BorderRadius.circular(24),
+                                  ),
+                                  child: const Icon(Icons.delete_outline_rounded, color: Colors.white, size: 28),
+                                ),
+                                onDismissed: (direction) {
+                                  ref.read(billsProvider.notifier).removeBill(bill.id!);
+                                  NotificationService().cancelBillReminders(bill.id!);
+                                },
+                                child: _buildBillCard(context, bill, currencyFormat, isDueSoon, isOverdue),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      const SizedBox(height: 120),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
         heroTag: 'bills_fab',
         onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const AddBillScreen()),
-          );
+          Navigator.push(context, MaterialPageRoute(builder: (context) => const AddBillScreen()));
         },
+        label: const Text('TAMBAH TAGIHAN', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1)),
+        icon: const Icon(Icons.add_rounded, size: 24),
         backgroundColor: AppColors.ctaAqua,
-        child: const Icon(Icons.add, color: AppColors.textDarkBlue),
+        foregroundColor: AppColors.textDarkBlue,
+        elevation: 8,
+      ),
+    );
+  }
+
+  Widget _buildBillsSummary(double total, NumberFormat format) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(28),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(color: Colors.white.withOpacity(0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'TOTAL TAGIHAN BULAN INI',
+            style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            format.format(total),
+            style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: -0.5),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildBillCard(BuildContext context, Bill bill, NumberFormat format, bool isDueSoon, bool isOverdue) {
-    Color cardColor = Colors.white;
-    Color accentColor = AppColors.textDarkBlue;
-    Color textColor = AppColors.textDarkBlue;
-
-    if (isOverdue) {
-      cardColor = const Color(0xFFFFF1F1);
-      accentColor = Colors.red;
-    } else if (isDueSoon) {
-      cardColor = const Color(0xFFFFF8F8);
-      accentColor = Colors.orange.shade800;
-    }
-
+    Color accentColor = isOverdue ? Colors.red : (isDueSoon ? Colors.orange : AppColors.ctaAqua);
+    
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isOverdue ? Colors.red.withValues(alpha: 0.3) : (isDueSoon ? Colors.orange.withValues(alpha: 0.3) : AppColors.borderColor),
-          width: isOverdue || isDueSoon ? 1.5 : 1.0,
-        ),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: AppColors.borderColor.withOpacity(0.2),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -114,39 +191,39 @@ class BillsScreen extends ConsumerWidget {
       child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(24),
             child: Column(
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(10),
+                      padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: accentColor.withValues(alpha: 0.1),
-                        shape: BoxShape.circle,
+                        color: accentColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                      child: Icon(Icons.receipt_outlined, color: accentColor, size: 20),
+                      child: Icon(Icons.receipt_rounded, color: accentColor, size: 24),
                     ),
                     Row(
                       children: [
                         if (isOverdue || isDueSoon)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            margin: const EdgeInsets.only(right: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            margin: const EdgeInsets.only(right: 12),
                             decoration: BoxDecoration(
-                              color: isOverdue ? Colors.red : Colors.orange.shade800,
-                              borderRadius: BorderRadius.circular(8),
+                              color: accentColor,
+                              borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
                               isOverdue ? 'TERLAMBAT' : 'SEGARA',
-                              style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                              style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.5),
                             ),
                           ),
                         IconButton(
-                          constraints: const BoxConstraints(),
                           padding: EdgeInsets.zero,
-                          icon: const Icon(Icons.edit_outlined, size: 20, color: AppColors.textMuted),
+                          constraints: const BoxConstraints(),
+                          icon: const Icon(Icons.edit_note_rounded, color: AppColors.textMuted, size: 26),
                           onPressed: () {
                             Navigator.push(
                               context,
@@ -158,7 +235,7 @@ class BillsScreen extends ConsumerWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 20),
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Column(
@@ -166,28 +243,19 @@ class BillsScreen extends ConsumerWidget {
                     children: [
                       Text(
                         bill.title,
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: textColor),
+                        style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 20, color: AppColors.textDarkBlue),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 4),
                       Row(
                         children: [
-                          Icon(Icons.category_outlined, size: 12, color: AppColors.textMuted),
-                          const SizedBox(width: 4),
+                          Icon(Icons.category_rounded, size: 12, color: AppColors.textMuted.withOpacity(0.5)),
+                          const SizedBox(width: 6),
                           Text(
-                            bill.category,
-                            style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+                            bill.category.toUpperCase(),
+                            style: const TextStyle(color: AppColors.textMuted, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1),
                           ),
-                          const SizedBox(width: 8),
-                          Icon(Icons.calendar_today_outlined, size: 12, color: AppColors.textMuted),
-                          const SizedBox(width: 4),
-                          Text(
-                            DateFormat('dd MMM yyyy').format(bill.dueDate),
-                            style: TextStyle(
-                              color: isOverdue ? Colors.red : AppColors.textMuted,
-                              fontSize: 12,
-                              fontWeight: isOverdue ? FontWeight.bold : FontWeight.normal,
-                            ),
-                          ),
+                          const SizedBox(width: 16),
+                          Icon(Icons.notifications_active_rounded, size: 12, color: bill.reminderEnabled ? AppColors.ctaAqua : AppColors.textMuted.withOpacity(0.5)),
                         ],
                       ),
                     ],
@@ -196,36 +264,43 @@ class BillsScreen extends ConsumerWidget {
               ],
             ),
           ),
-          const Divider(height: 1, color: AppColors.borderColor),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            decoration: BoxDecoration(
+              color: AppColors.cardPaleBlue.withOpacity(0.2),
+              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(28)),
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('JUMLAH', style: TextStyle(color: AppColors.textMuted, fontSize: 10, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 2),
                     Text(
-                      format.format(bill.amount),
-                      style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20, color: textColor),
+                      isOverdue ? 'JATUH TEMPO PADA' : 'TANGGAL PENAGIHAN',
+                      style: TextStyle(color: isOverdue ? Colors.red : AppColors.textMuted, fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 0.5),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      DateFormat('dd MMMM yyyy').format(bill.dueDate),
+                      style: TextStyle(
+                        color: isOverdue ? Colors.red : AppColors.textDarkBlue,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                   ],
                 ),
-                ElevatedButton(
-                  onPressed: () {
-                    // Logic to mark as paid if we implement it, 
-                    // otherwise just visual for now or same as delete
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: accentColor,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                  child: const Text('BAYAR', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    const Text('JUMLAH', style: TextStyle(color: AppColors.textMuted, fontSize: 9, fontWeight: FontWeight.w900)),
+                    const SizedBox(height: 2),
+                    Text(
+                      format.format(bill.amount),
+                      style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: AppColors.textDarkBlue),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -237,16 +312,26 @@ class BillsScreen extends ConsumerWidget {
 
   Widget _buildEmptyState(BuildContext context) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.receipt_long_outlined, size: 80, color: AppColors.textMuted.withValues(alpha: 0.2)),
-          const SizedBox(height: 16),
-          const Text('Belum ada tagihan terdaftar.', style: TextStyle(color: AppColors.textMuted, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          const Text('Tambah tagihan rutin Anda di sini.', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 80),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: AppColors.cardPaleBlue.withOpacity(0.3),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.receipt_long_rounded, size: 56, color: AppColors.textMuted.withOpacity(0.2)),
+            ),
+            const SizedBox(height: 24),
+            const Text('Belum ada tagihan terdaftar.', style: TextStyle(color: AppColors.textMuted, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 8),
+            const Text('Tambah tagihan rutin Anda di sini.', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+          ],
+        ),
       ),
     );
   }
+}
 }

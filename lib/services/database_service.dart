@@ -1,7 +1,10 @@
+import 'package:flutter/material.dart' show Color, IconData;
 import 'package:sqflite/sqflite.dart' hide Transaction;
 import 'package:path/path.dart';
 import '../models/transaction.dart';
 import '../models/bill.dart';
+import '../models/wallet.dart';
+import '../models/budget.dart';
 
 class DatabaseService {
   static final DatabaseService instance = DatabaseService._init();
@@ -21,8 +24,9 @@ class DatabaseService {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 3,
       onCreate: _createDB,
+      onUpgrade: _upgradeDB,
     );
   }
 
@@ -33,6 +37,15 @@ class DatabaseService {
     const numType = 'REAL NOT NULL';
 
     await db.execute('''
+CREATE TABLE wallets (
+  id $idType,
+  name $textType,
+  type $textType,
+  color INTEGER NOT NULL
+)
+''');
+
+    await db.execute('''
 CREATE TABLE transactions (
   id $idType,
   title $textType,
@@ -40,7 +53,12 @@ CREATE TABLE transactions (
   type $textType,
   category $textType,
   date $textType,
-  note TEXT
+  note TEXT,
+  walletId INTEGER NOT NULL,
+  toWalletId INTEGER,
+  adminFee REAL NOT NULL DEFAULT 0,
+  FOREIGN KEY (walletId) REFERENCES wallets (id),
+  FOREIGN KEY (toWalletId) REFERENCES wallets (id)
 )
 ''');
 
@@ -55,6 +73,97 @@ CREATE TABLE bills (
   reminderEnabled $boolType
 )
 ''');
+
+    await db.execute('''
+CREATE TABLE budgets (
+  id $idType,
+  category TEXT NOT NULL UNIQUE,
+  limitAmount $numType
+)
+''');
+
+    // Insert Default Wallet
+    await db.insert('wallets', {
+      'id': 1,
+      'name': 'Dompet Utama',
+      'type': 'bank',
+      'color': 0xFF42A5F5, // Blue
+    });
+  }
+
+  Future _upgradeDB(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute('''
+CREATE TABLE wallets (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  type TEXT NOT NULL,
+  color INTEGER NOT NULL
+)
+''');
+      await db.insert('wallets', {'id': 1, 'name': 'Dompet Utama', 'type': 'bank', 'color': 0xFF42A5F5});
+      await db.execute('ALTER TABLE transactions ADD COLUMN walletId INTEGER NOT NULL DEFAULT 1');
+      await db.execute('ALTER TABLE transactions ADD COLUMN toWalletId INTEGER');
+      await db.execute('ALTER TABLE transactions ADD COLUMN adminFee REAL NOT NULL DEFAULT 0');
+    }
+    
+    if (oldVersion < 3) {
+      await db.execute('''
+CREATE TABLE budgets (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  category TEXT NOT NULL UNIQUE,
+  limitAmount REAL NOT NULL
+)
+''');
+    }
+  }
+
+  // Budget CRUD
+  Future<List<Budget>> getAllBudgets() async {
+    final db = await instance.database;
+    final result = await db.query('budgets');
+    return result.map((json) => Budget.fromMap(json)).toList();
+  }
+
+  Future<int> saveBudget(Budget budget) async {
+    final db = await instance.database;
+    return await db.insert(
+      'budgets',
+      budget.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<int> deleteBudget(int id) async {
+    final db = await instance.database;
+    return await db.delete('budgets', where: 'id = ?', whereArgs: [id]);
+  }
+
+  // Wallet CRUD
+  Future<int> createWallet(Wallet wallet) async {
+    final db = await instance.database;
+    return await db.insert('wallets', wallet.toMap());
+  }
+
+  Future<List<Wallet>> getAllWallets() async {
+    final db = await instance.database;
+    final result = await db.query('wallets');
+    return result.map((json) => Wallet.fromMap(json)).toList();
+  }
+
+  Future<int> deleteWallet(int id) async {
+    final db = await instance.database;
+    return await db.delete('wallets', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<int> updateWallet(Wallet wallet) async {
+    final db = await instance.database;
+    return await db.update(
+      'wallets',
+      wallet.toMap(),
+      where: 'id = ?',
+      whereArgs: [wallet.id],
+    );
   }
 
   // Transaction CRUD
