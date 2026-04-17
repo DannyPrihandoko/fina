@@ -334,4 +334,3 @@ class BillsScreen extends ConsumerWidget {
     );
   }
 }
-}

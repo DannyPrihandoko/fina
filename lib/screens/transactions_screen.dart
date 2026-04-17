@@ -90,29 +90,29 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
             ),
           ),
 
-          Column(
-            children: [
+          CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
               SliverPadding(
-                padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 64),
-                // This part doesn't work inside Column, using Padding instead
-              ).sliver,
-              
-              const SizedBox(height: 80), // Manual offset for AppBar
+                padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 80),
+                sliver: SliverToBoxAdapter(
+                  child: Column(
+                    children: [
+                      // Monthly Summary Card (Glassmorphic)
+                      _buildSummaryCard(monthlyBalance, monthlyIncome, monthlyExpense, currencyFormat),
+                      const SizedBox(height: 24),
+                      // Month Selector
+                      _buildMonthSelector(),
+                      const SizedBox(height: 32),
+                    ],
+                  ),
+                ),
+              ),
 
-              // Monthly Summary Card (Glassmorphic)
-              _buildSummaryCard(monthlyBalance, monthlyIncome, monthlyExpense, currencyFormat),
-              
-              const SizedBox(height: 24),
-              
-              // Month Selector
-              _buildMonthSelector(),
-              
-              const SizedBox(height: 32),
-              
-              // Transactions List Area
-              Expanded(
+              SliverToBoxAdapter(
                 child: Container(
                   width: double.infinity,
+                  constraints: BoxConstraints(minHeight: MediaQuery.of(context).size.height - 400),
                   decoration: const BoxDecoration(
                     color: AppColors.background,
                     borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
@@ -120,6 +120,8 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                   child: filteredTransactions.isEmpty
                       ? _buildEmptyState()
                       : ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
                           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
                           itemCount: sortedDates.length,
                           itemBuilder: (context, index) {
@@ -383,31 +385,6 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
       ),
     );
   }
-
-  String _formatDateHeader(DateTime date) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final yesterday = today.subtract(const Duration(days: 1));
-    
-    if (date == today) return 'HARI INI';
-    if (date == yesterday) return 'KEMARIN';
-    
-    return DateFormat('EEEE, dd MMMM').format(date).toUpperCase();
-  }
-
-  IconData _getCategoryIcon(String category) {
-    switch (category.toLowerCase()) {
-      case 'makanan': return Icons.restaurant_rounded;
-      case 'belanja': return Icons.shopping_bag_outlined;
-      case 'transportasi': return Icons.directions_bus_filled_outlined;
-      case 'hiburan': return Icons.movie_filter_outlined;
-      case 'kesehatan': return Icons.health_and_safety_outlined;
-      case 'transfer': return Icons.swap_horiz_rounded;
-      case 'initial': return Icons.first_page_rounded;
-      default: return Icons.category_outlined;
-    }
-  }
-}
 
   String _formatDateHeader(DateTime date) {
     final now = DateTime.now();

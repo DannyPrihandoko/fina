@@ -1,5 +1,5 @@
 import 'package:image_picker/image_picker.dart';
-import 'package:google_ml_kit_text_recognition/google_ml_kit_text_recognition.dart';
+import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'local_ai_engine.dart';
 
 class OCRService {

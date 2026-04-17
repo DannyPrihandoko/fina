@@ -423,4 +423,3 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
     );
   }
 }
-}
