@@ -22,106 +22,81 @@ class BillsScreen extends ConsumerWidget {
     }
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
       backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.textDarkBlue, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Tagihan Rutin', style: TextStyle(fontWeight: FontWeight.w900, color: Colors.white)),
+        title: const Text('Tagihan Rutin', style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.textDarkBlue)),
         centerTitle: false,
       ),
-      body: Stack(
-        children: [
-          // BACKGROUND GRADIENT
-          Container(
-            height: 350,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: AppColors.mainGradient,
+      body: CustomScrollView(
+        slivers: [
+          SliverPadding(
+            padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 70, left: 20, right: 20),
+            sliver: SliverToBoxAdapter(
+              child: Column(
+                children: [
+                  // Monthly Bills Summary (Glassmorphic)
+                  _buildBillsSummary(totalBills, currencyFormat),
+                  const SizedBox(height: 32),
+                ],
               ),
             ),
           ),
 
-          CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              SliverPadding(
-                padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 64, left: 20, right: 20),
-                sliver: SliverToBoxAdapter(
-                  child: Column(
-                    children: [
-                      // Monthly Bills Summary (Glassmorphic)
-                      _buildBillsSummary(totalBills, currencyFormat),
-                      const SizedBox(height: 32),
-                    ],
+          SliverToBoxAdapter(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(28, 32, 28, 16),
+                  child: Text(
+                    'Daftar Tagihan',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.textDarkBlue),
                   ),
                 ),
-              ),
+                if (bills.isEmpty)
+                  _buildEmptyState(context)
+                else
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      children: bills.map((bill) {
+                        // Due soon logic (3 days)
+                        final now = DateTime.now();
+                        final diff = bill.dueDate.difference(DateTime(now.year, now.month, now.day)).inDays;
+                        final isDueSoon = diff >= 0 && diff <= 3;
+                        final isOverdue = diff < 0;
 
-              SliverToBoxAdapter(
-                child: Container(
-                  width: double.infinity,
-                  decoration: const BoxDecoration(
-                    color: AppColors.background,
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Padding(
-                        padding: EdgeInsets.fromLTRB(28, 32, 28, 16),
-                        child: Text(
-                          'Daftar Tagihan',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.textDarkBlue),
-                        ),
-                      ),
-                      if (bills.isEmpty)
-                        _buildEmptyState(context)
-                      else
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: Column(
-                            children: bills.map((bill) {
-                              // Due soon logic (3 days)
-                              final now = DateTime.now();
-                              final diff = bill.dueDate.difference(DateTime(now.year, now.month, now.day)).inDays;
-                              final isDueSoon = diff >= 0 && diff <= 3;
-                              final isOverdue = diff < 0;
-
-                              return Dismissible(
-                                key: Key('bill_${bill.id}'),
-                                direction: DismissDirection.endToStart,
-                                background: Container(
-                                  margin: const EdgeInsets.only(bottom: 16),
-                                  alignment: Alignment.centerRight,
-                                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                                  decoration: BoxDecoration(
-                                    color: Colors.redAccent.withOpacity(0.8),
-                                    borderRadius: BorderRadius.circular(24),
-                                  ),
-                                  child: const Icon(Icons.delete_outline_rounded, color: Colors.white, size: 28),
-                                ),
-                                onDismissed: (direction) {
-                                  ref.read(billsProvider.notifier).removeBill(bill.id!);
-                                  NotificationService().cancelBillReminders(bill.id!);
-                                },
-                                child: _buildBillCard(context, bill, currencyFormat, isDueSoon, isOverdue),
-                              );
-                            }).toList(),
+                        return Dismissible(
+                          key: Key('bill_${bill.id}'),
+                          direction: DismissDirection.endToStart,
+                          background: Container(
+                            margin: const EdgeInsets.only(bottom: 16),
+                            alignment: Alignment.centerRight,
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            decoration: BoxDecoration(
+                              color: Colors.redAccent.withOpacity(0.8),
+                              borderRadius: BorderRadius.circular(24),
+                            ),
+                            child: const Icon(Icons.delete_outline_rounded, color: Colors.white, size: 28),
                           ),
-                        ),
-                      const SizedBox(height: 120),
-                    ],
+                          onDismissed: (direction) {
+                            ref.read(billsProvider.notifier).removeBill(bill.id!);
+                            NotificationService().cancelBillReminders(bill.id!);
+                          },
+                          child: _buildBillCard(context, bill, currencyFormat, isDueSoon, isOverdue),
+                        );
+                      }).toList(),
+                    ),
                   ),
-                ),
-              ),
-            ],
+                const SizedBox(height: 120),
+              ],
+            ),
           ),
         ],
       ),
@@ -144,12 +119,12 @@ class BillsScreen extends ConsumerWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
+        color: AppColors.cardPaleBlue,
         borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: Colors.white.withOpacity(0.2)),
+        border: Border.all(color: AppColors.borderColor.withOpacity(0.5)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: AppColors.textDarkBlue.withValues(alpha: 0.05),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -160,12 +135,12 @@ class BillsScreen extends ConsumerWidget {
         children: [
           const Text(
             'TOTAL TAGIHAN BULAN INI',
-            style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5),
+            style: TextStyle(color: AppColors.textMuted, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5),
           ),
           const SizedBox(height: 12),
           Text(
             format.format(total),
-            style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: -0.5),
+            style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w900, color: AppColors.textDarkBlue, letterSpacing: -0.5),
           ),
         ],
       ),

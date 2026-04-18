@@ -18,7 +18,7 @@ class _AIScreenState extends ConsumerState<AIScreen> {
   final List<Map<String, String>> _messages = [
     {
       'role': 'ai',
-      'content': 'Halo! Saya asisten **fina**. Saya sudah siap menganalisis keuangan Anda. Ada yang ingin ditanyakan? 😊'
+      'content': 'Selamat datang! Saya asisten **fina**. Saya siap memberikan analisis mendalam mengenai kesehatan keuangan Anda hari ini. Apa yang bisa saya bantu analisis? 😊'
     }
   ];
   final _controller = TextEditingController();
@@ -26,11 +26,11 @@ class _AIScreenState extends ConsumerState<AIScreen> {
   bool _isTyping = false;
 
   final List<String> _quickActions = [
-    'Gimana kondisi keuangan saya?',
-    'Berapa sisa uang saya?',
-    'Tabungan saya aman gak?',
-    'Ada tagihan apa?',
-    'Bantuan',
+    'Analisis keuangan saya',
+    'Cek saldo kas',
+    'Evaluasi dana darurat',
+    'Daftar tagihan rutin',
+    'Bantuan fitur',
   ];
 
   void _sendMessage([String? text]) {
@@ -83,8 +83,8 @@ class _AIScreenState extends ConsumerState<AIScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Asisten Fina', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.white,
+        title: const Text('Asisten Fina', style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.textDarkBlue)),
+        backgroundColor: AppColors.background,
         elevation: 0,
         centerTitle: true,
       ),

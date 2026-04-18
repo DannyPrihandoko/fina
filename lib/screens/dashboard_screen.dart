@@ -156,139 +156,94 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         centerTitle: false,
         actions: [
           IconButton(
-            icon: const Icon(Icons.document_scanner_rounded, color: Colors.white),
+            icon: const Icon(Icons.document_scanner_rounded, color: AppColors.textDarkBlue),
             onPressed: _showScanOptions,
             tooltip: 'Scan Struk',
           ),
           IconButton(
-            icon: const Icon(Icons.notifications_none_rounded, color: Colors.white),
+            icon: const Icon(Icons.notifications_none_rounded, color: AppColors.textDarkBlue),
             onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen())),
           ),
           const SizedBox(width: 16),
         ],
       ),
-      body: Stack(
-        children: [
-          // BACKGROUND GRADIENT
-          Container(
-            height: 350,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: AppColors.mainGradient,
-              ),
-            ),
-          ),
-          
-          // MAIN CONTENT
-          RefreshIndicator(
-            onRefresh: () async {
-              await ref.read(transactionsProvider.notifier).loadTransactions();
-              await ref.read(walletsProvider.notifier).loadWallets();
-            },
-            child: SingleChildScrollView(
-              padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 56),
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildHeader(netWorth, currencyFormat),
-                  const SizedBox(height: 32),
-                  _buildWalletCarousel(wallets, ref, currencyFormat),
-                  const SizedBox(height: 12),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: GestureDetector(
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const WalletsScreen())),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: AppColors.ctaAqua.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.settings_suggest_outlined, size: 14, color: AppColors.ctaAqua),
-                            SizedBox(width: 8),
-                            Text('KELOLA DOMPET', style: TextStyle(color: AppColors.ctaAqua, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1)),
-                          ],
-                        ),
-                      ),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await ref.read(transactionsProvider.notifier).loadTransactions();
+          await ref.read(walletsProvider.notifier).loadWallets();
+        },
+        child: SingleChildScrollView(
+          padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 70),
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(netWorth, currencyFormat),
+              const SizedBox(height: 32),
+              _buildWalletCarousel(wallets, ref, currencyFormat),
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: GestureDetector(
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const WalletsScreen())),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.ctaAqua.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  ),
-                  const SizedBox(height: 32),
-                  Container(
-                    width: double.infinity,
-                    decoration: const BoxDecoration(
-                      color: AppColors.background,
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-                    ),
-                    child: Column(
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        const SizedBox(height: 32),
-                        if (budgets.isNotEmpty)
-                          _buildBudgetSection(context, budgets, transactions, currencyFormat),
-                        const SizedBox(height: 32),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 24),
-                          child: _buildSectionHeader(
-                            context, 
-                            'Aktivitas Hari Ini', 
-                            () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TransactionsScreen()))
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 24),
-                          child: _buildTransactionsList(context, transactions, currencyFormat),
-                        ),
-                        const SizedBox(height: 32),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 24),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Tagihan Mendatang', style: Theme.of(context).textTheme.titleMedium),
-                              const SizedBox(height: 16),
-                              if (bills.isEmpty)
-                                _buildEmptyState(context, 'Tidak ada tagihan mendesak.')
-                              else
-                                ...bills.take(3).map((bill) => _buildMinimalBillItem(bill, currencyFormat)),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 120),
+                        Icon(Icons.settings_suggest_outlined, size: 14, color: AppColors.ctaAqua),
+                        SizedBox(width: 8),
+                        Text('KELOLA DOMPET', style: TextStyle(color: AppColors.ctaAqua, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1)),
                       ],
                     ),
                   ),
-                ],
-              ),
-            ),
-          ),
-
-          // SCANNING OVERLAY
-          if (_isScanning)
-            Positioned.fill(
-              child: Container(
-                color: Colors.black54,
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const CircularProgressIndicator(color: AppColors.ctaAqua),
-                      const SizedBox(height: 24),
-                      const Text(
-                        'AI sedang menganalisis struk...',
-                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
                 ),
               ),
-            ),
-        ],
+              const SizedBox(height: 32),
+              Column(
+                children: [
+                  const SizedBox(height: 32),
+                  if (budgets.isNotEmpty)
+                    _buildBudgetSection(context, budgets, transactions, currencyFormat),
+                  const SizedBox(height: 32),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: _buildSectionHeader(
+                      context, 
+                      'Aktivitas Hari Ini', 
+                      () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TransactionsScreen()))
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: _buildTransactionsList(context, transactions, currencyFormat),
+                  ),
+                  const SizedBox(height: 32),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Tagihan Mendatang', style: Theme.of(context).textTheme.titleMedium),
+                        const SizedBox(height: 16),
+                        if (bills.isEmpty)
+                          _buildEmptyState(context, 'Tidak ada tagihan mendesak.')
+                        else
+                          ...bills.take(3).map((bill) => _buildMinimalBillItem(bill, currencyFormat)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 120),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
       floatingActionButton: const _SmartTransactionBubble(),
     );
@@ -301,12 +256,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         width: double.infinity,
         padding: const EdgeInsets.all(28),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.1),
+          color: AppColors.cardPaleBlue,
           borderRadius: BorderRadius.circular(32),
-          border: Border.all(color: Colors.white.withOpacity(0.2)),
+          border: Border.all(color: AppColors.borderColor.withOpacity(0.5)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: AppColors.textDarkBlue.withOpacity(0.05),
               blurRadius: 20,
               offset: const Offset(0, 10),
             ),
@@ -317,18 +272,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           children: [
             Row(
               children: [
-                Icon(Icons.account_balance_wallet_rounded, color: AppColors.ctaAqua.withOpacity(0.8), size: 16),
+                Icon(Icons.account_balance_wallet_rounded, color: AppColors.ctaAqua, size: 16),
                 const SizedBox(width: 8),
                 const Text(
                   'TOTAL KEKAYAAN BERSIH',
-                  style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5),
+                  style: TextStyle(color: AppColors.textMuted, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5),
                 ),
               ],
             ),
             const SizedBox(height: 12),
             Text(
               format.format(netWorth),
-              style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: -0.5),
+              style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w900, color: AppColors.textDarkBlue, letterSpacing: -0.5),
             ),
           ],
         ),

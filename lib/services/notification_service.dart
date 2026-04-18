@@ -35,6 +35,20 @@ class NotificationService {
         // Handle notification tap
       },
     );
+
+    // Create default channel for Android
+    if (Platform.isAndroid) {
+      const AndroidNotificationChannel channel = AndroidNotificationChannel(
+        'bill_channel',
+        'Tagihan',
+        description: 'Pemberitahuan untuk tagihan mendatang',
+        importance: Importance.max,
+      );
+
+      await _notificationsPlugin
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+          ?.createNotificationChannel(channel);
+    }
   }
 
   Future<bool> requestPermissions() async {
@@ -51,8 +65,19 @@ class NotificationService {
       final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
           _notificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
       
+      // Request POST_NOTIFICATIONS (Android 13+)
       final bool? granted = await androidImplementation?.requestNotificationsPermission();
-      return granted ?? false;
+      
+      // Also request exact alarm permission if needed (Android 12+)
+      // Note: requestExactAlarmsPermission() is available in newer versions of the plugin
+      bool exactGranted = true;
+      try {
+        exactGranted = await androidImplementation?.requestExactAlarmsPermission() ?? true;
+      } catch (e) {
+        // Fallback for older plugin versions
+      }
+
+      return (granted ?? false) && exactGranted;
     }
     return false;
   }
@@ -135,8 +160,22 @@ class NotificationService {
   }
 
   Future<bool> isNotificationsEnabled() async {
-    // Basic check for permissions
-    // In a real app, you might want to check the actual OS settings
-    return true; 
+    if (Platform.isIOS) {
+      final bool? result = await _notificationsPlugin
+          .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
+          ?.requestPermissions(
+            alert: false,
+            badge: false,
+            sound: false,
+          );
+      return result ?? false;
+    } else if (Platform.isAndroid) {
+      final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
+          _notificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+      
+      final bool? granted = await androidImplementation?.areNotificationsEnabled();
+      return granted ?? false;
+    }
+    return false;
   }
 }

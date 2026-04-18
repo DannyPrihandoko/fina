@@ -14,6 +14,16 @@ class AppTheme {
         error: AppColors.error,
       ),
       scaffoldBackgroundColor: AppColors.background,
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: IconThemeData(color: AppColors.textDarkBlue),
+        titleTextStyle: TextStyle(
+          color: AppColors.textDarkBlue,
+          fontSize: 20,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
       textTheme: GoogleFonts.plusJakartaSansTextTheme().copyWith(
         displayLarge: GoogleFonts.plusJakartaSans(
           fontSize: 56,

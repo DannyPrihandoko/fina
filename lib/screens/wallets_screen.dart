@@ -21,80 +21,56 @@ class WalletsScreen extends ConsumerWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.textDarkBlue, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Kelola Dompet', style: TextStyle(fontWeight: FontWeight.w900, color: Colors.white)),
+        title: const Text('Kelola Dompet', style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.textDarkBlue)),
         centerTitle: false,
       ),
-      body: Stack(
-        children: [
-          // BACKGROUND GRADIENT
-          Container(
-            height: 350,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: AppColors.mainGradient,
+      body: CustomScrollView(
+        slivers: [
+          SliverPadding(
+            padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 70, left: 20, right: 20),
+            sliver: SliverToBoxAdapter(
+              child: Column(
+                children: [
+                  // Total Balance Summary (Glassmorphic)
+                  _buildTotalSummary(totalBalance, currencyFormat),
+                  const SizedBox(height: 32),
+                ],
               ),
             ),
           ),
 
-          CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              SliverPadding(
-                padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 64, left: 20, right: 20),
-                sliver: SliverToBoxAdapter(
-                  child: Column(
-                    children: [
-                      // Total Balance Summary (Glassmorphic)
-                      _buildTotalSummary(totalBalance, currencyFormat),
-                      const SizedBox(height: 32),
-                    ],
+          SliverToBoxAdapter(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(28, 32, 28, 16),
+                  child: Text(
+                    'Dompet Anda',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.textDarkBlue),
                   ),
                 ),
-              ),
-
-              SliverToBoxAdapter(
-                child: Container(
-                  width: double.infinity,
-                  decoration: const BoxDecoration(
-                    color: AppColors.background,
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+                if (wallets.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.all(40.0),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                else
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      children: wallets.map((wallet) {
+                        final balance = ref.watch(walletBalanceProvider(wallet.id!));
+                        return _buildWalletItem(context, ref, wallet, balance, currencyFormat);
+                      }).toList(),
+                    ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Padding(
-                        padding: EdgeInsets.fromLTRB(28, 32, 28, 16),
-                        child: Text(
-                          'Dompet Anda',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.textDarkBlue),
-                        ),
-                      ),
-                      if (wallets.isEmpty)
-                        const Padding(
-                          padding: EdgeInsets.all(40.0),
-                          child: Center(child: CircularProgressIndicator()),
-                        )
-                      else
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: Column(
-                            children: wallets.map((wallet) {
-                              final balance = ref.watch(walletBalanceProvider(wallet.id!));
-                              return _buildWalletItem(context, ref, wallet, balance, currencyFormat);
-                            }).toList(),
-                          ),
-                        ),
-                      const SizedBox(height: 120),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+                const SizedBox(height: 120),
+              ],
+            ),
           ),
         ],
       ),
@@ -114,12 +90,12 @@ class WalletsScreen extends ConsumerWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
+        color: AppColors.cardPaleBlue,
         borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: Colors.white.withOpacity(0.2)),
+        border: Border.all(color: AppColors.borderColor.withOpacity(0.5)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: AppColors.textDarkBlue.withValues(alpha: 0.05),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -130,18 +106,18 @@ class WalletsScreen extends ConsumerWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.account_balance_rounded, color: AppColors.ctaAqua.withOpacity(0.8), size: 16),
+              Icon(Icons.account_balance_rounded, color: AppColors.ctaAqua, size: 16),
               const SizedBox(width: 8),
               const Text(
                 'TOTAL SALDO TERKUMPUL',
-                style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5),
+                style: TextStyle(color: AppColors.textMuted, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5),
               ),
             ],
           ),
           const SizedBox(height: 12),
           Text(
             format.format(total),
-            style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: -0.5),
+            style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w900, color: AppColors.textDarkBlue, letterSpacing: -0.5),
           ),
         ],
       ),

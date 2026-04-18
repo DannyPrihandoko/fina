@@ -48,125 +48,101 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.textDarkBlue, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Rekapitulasi', style: TextStyle(fontWeight: FontWeight.w900, color: Colors.white)),
+        title: const Text('Rekapitulasi', style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.textDarkBlue)),
         centerTitle: false,
       ),
-      body: Stack(
-        children: [
-          // BACKGROUND GRADIENT
-          Container(
-            height: 350,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: AppColors.mainGradient,
+      body: CustomScrollView(
+        slivers: [
+          SliverPadding(
+            padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 70),
+            sliver: SliverToBoxAdapter(
+              child: Column(
+                children: [
+                  // Filter Section
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          _buildFilterChip('7D'),
+                          _buildFilterChip('30D'),
+                          _buildFilterChip('Bulan Ini'),
+                          _buildFilterChip('Bulan Lalu'),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Main Summary Card (Glassmorphic)
+                  _buildMainSummaryCard(netBalance, totalIncome, totalExpense, currencyFormat),
+                ],
               ),
             ),
           ),
 
-          CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              SliverPadding(
-                padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 64),
-                sliver: SliverToBoxAdapter(
-                  child: Column(
+          // Chart Section
+          SliverToBoxAdapter(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Filter Section
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            children: [
-                              _buildFilterChip('7D'),
-                              _buildFilterChip('30D'),
-                              _buildFilterChip('Bulan Ini'),
-                              _buildFilterChip('Bulan Lalu'),
-                            ],
-                          ),
-                        ),
+                      const Text(
+                        'Tren Arus Kas',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.textDarkBlue),
                       ),
-                      const SizedBox(height: 24),
-
-                      // Main Summary Card (Glassmorphic)
-                      _buildMainSummaryCard(netBalance, totalIncome, totalExpense, currencyFormat),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(color: AppColors.ctaAqua.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                        child: const Text('LIVE', style: TextStyle(color: AppColors.ctaAqua, fontWeight: FontWeight.w900, fontSize: 10)),
+                      ),
                     ],
                   ),
                 ),
-              ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: _buildTrendChart(filteredTx, _timeRange),
+                ),
+                
+                const SizedBox(height: 32),
 
-              // Chart Section
-              SliverToBoxAdapter(
-                child: Container(
-                  margin: const EdgeInsets.only(top: 32),
-                  decoration: const BoxDecoration(
-                    color: AppColors.background,
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-                  ),
+                // Category Insights Section
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              'Tren Arus Kas',
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.textDarkBlue),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(color: AppColors.ctaAqua.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-                              child: const Text('LIVE', style: TextStyle(color: AppColors.ctaAqua, fontWeight: FontWeight.w900, fontSize: 10)),
-                            ),
-                          ],
-                        ),
+                      const Text(
+                        'Detail Pengeluaran',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.textDarkBlue),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                        child: _buildTrendChart(filteredTx, _timeRange),
-                      ),
-                      
-                      const SizedBox(height: 32),
-
-                      // Category Insights Section
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Detail Pengeluaran',
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.textDarkBlue),
-                            ),
-                            const SizedBox(height: 4),
-                            const Text('Ketuk kategori untuk mengatur anggaran', style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
-                            const SizedBox(height: 24),
-                            if (sortedCategories.isEmpty)
-                              _buildEmptyState('Tidak ada data pengeluaran.')
-                            else
-                              ...sortedCategories.map((entry) => _buildCategoryCard(
-                                    entry.key,
-                                    entry.value,
-                                    totalExpense,
-                                    currencyFormat,
-                                    budgets,
-                                  )),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 120),
+                      const SizedBox(height: 4),
+                      const Text('Ketuk kategori untuk mengatur anggaran', style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                      const SizedBox(height: 24),
+                      if (sortedCategories.isEmpty)
+                        _buildEmptyState('Tidak ada data pengeluaran.')
+                      else
+                        ...sortedCategories.map((entry) => _buildCategoryCard(
+                              entry.key,
+                              entry.value,
+                              totalExpense,
+                              currencyFormat,
+                              budgets,
+                            )),
                     ],
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 120),
+              ],
+            ),
           ),
         ],
       ),
@@ -202,12 +178,12 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
         width: double.infinity,
         padding: const EdgeInsets.all(28),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.1),
+          color: AppColors.cardPaleBlue,
           borderRadius: BorderRadius.circular(32),
-          border: Border.all(color: Colors.white.withOpacity(0.2)),
+          border: Border.all(color: AppColors.borderColor.withOpacity(0.5)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: AppColors.textDarkBlue.withValues(alpha: 0.05),
               blurRadius: 20,
               offset: const Offset(0, 10),
             ),
@@ -217,25 +193,26 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
           children: [
             const Text(
               'SELISIH KAS PERIODE INI',
-              style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5),
+              style: TextStyle(color: AppColors.textMuted, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5),
             ),
             const SizedBox(height: 12),
             Text(
               format.format(net),
-              style: const TextStyle(color: Colors.white, fontSize: 34, fontWeight: FontWeight.w900, letterSpacing: -0.5),
+              style: const TextStyle(color: AppColors.textDarkBlue, fontSize: 34, fontWeight: FontWeight.w900, letterSpacing: -0.5),
             ),
             const SizedBox(height: 28),
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: AppColors.borderColor.withOpacity(0.5)),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   _buildSummaryItem('Pemasukan', income, AppColors.ctaAqua),
-                  Container(width: 1, height: 30, color: Colors.white12),
+                  Container(width: 1, height: 30, color: AppColors.borderColor),
                   _buildSummaryItem('Pengeluaran', expense, Colors.redAccent),
                 ],
               ),
@@ -250,7 +227,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     final format = NumberFormat.compactCurrency(symbol: 'Rp', locale: 'id_ID');
     return Column(
       children: [
-        Text(label, style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold)),
+        Text(label, style: const TextStyle(color: AppColors.textMuted, fontSize: 10, fontWeight: FontWeight.bold)),
         const SizedBox(height: 6),
         Text(
           format.format(amount),

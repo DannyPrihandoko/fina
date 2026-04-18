@@ -117,7 +117,11 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tambah Transaksi', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('Tambah Transaksi', style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.textDarkBlue)),
+        leading: IconButton(
+          icon: const Icon(Icons.close_rounded, color: AppColors.textDarkBlue, size: 24),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),

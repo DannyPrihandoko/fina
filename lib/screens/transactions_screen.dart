@@ -70,124 +70,105 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.textDarkBlue, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Riwayat Transaksi', style: TextStyle(fontWeight: FontWeight.w900, color: Colors.white)),
+        title: const Text('Riwayat Transaksi', style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.textDarkBlue)),
         centerTitle: false,
       ),
-      body: Stack(
-        children: [
-          // BACKGROUND GRADIENT
-          Container(
-            height: 350,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: AppColors.mainGradient,
+      body: CustomScrollView(
+        slivers: [
+          SliverPadding(
+            padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 70),
+            sliver: SliverToBoxAdapter(
+              child: Column(
+                children: [
+                  // Monthly Summary Card (Glassmorphic)
+                  _buildSummaryCard(monthlyBalance, monthlyIncome, monthlyExpense, currencyFormat),
+                  const SizedBox(height: 24),
+                  // Month Selector
+                  _buildMonthSelector(),
+                  const SizedBox(height: 32),
+                ],
               ),
             ),
           ),
 
-          CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              SliverPadding(
-                padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 80),
-                sliver: SliverToBoxAdapter(
-                  child: Column(
-                    children: [
-                      // Monthly Summary Card (Glassmorphic)
-                      _buildSummaryCard(monthlyBalance, monthlyIncome, monthlyExpense, currencyFormat),
-                      const SizedBox(height: 24),
-                      // Month Selector
-                      _buildMonthSelector(),
-                      const SizedBox(height: 32),
-                    ],
-                  ),
-                ),
-              ),
-
-              SliverToBoxAdapter(
-                child: Container(
-                  width: double.infinity,
-                  constraints: BoxConstraints(minHeight: MediaQuery.of(context).size.height - 400),
-                  decoration: const BoxDecoration(
-                    color: AppColors.background,
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-                  ),
-                  child: filteredTransactions.isEmpty
-                      ? _buildEmptyState()
-                      : ListView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-                          itemCount: sortedDates.length,
-                          itemBuilder: (context, index) {
-                            final date = sortedDates[index];
-                            final txs = groupedTransactions[date]!;
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.only(bottom: 16, top: 8),
-                                  child: Row(
-                                    children: [
-                                      const Icon(Icons.calendar_today_rounded, size: 12, color: AppColors.textMuted),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        _formatDateHeader(date),
-                                        style: const TextStyle(
-                                          color: AppColors.textMuted,
-                                          fontWeight: FontWeight.w900,
-                                          fontSize: 11,
-                                          letterSpacing: 1,
-                                        ),
+          SliverToBoxAdapter(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                filteredTransactions.isEmpty
+                    ? _buildEmptyState()
+                    : ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                        itemCount: sortedDates.length,
+                        itemBuilder: (context, index) {
+                          final date = sortedDates[index];
+                          final txs = groupedTransactions[date]!;
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 16, top: 8),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.calendar_today_rounded, size: 12, color: AppColors.textMuted),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      _formatDateHeader(date),
+                                      style: const TextStyle(
+                                        color: AppColors.textMuted,
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 11,
+                                        letterSpacing: 1,
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
-                                Container(
-                                  margin: const EdgeInsets.only(bottom: 24),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(24),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: AppColors.borderColor.withOpacity(0.2),
-                                        blurRadius: 10,
-                                        offset: const Offset(0, 4),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Column(
-                                    children: txs.asMap().entries.map((entry) {
-                                      final i = entry.key;
-                                      final tx = entry.value;
-                                      final w = wallets.firstWhere((w) => w.id == tx.walletId, orElse: () => Wallet(name: 'Unknown', type: WalletType.cash, color: Colors.grey));
-                                      Wallet? toW;
-                                      if (tx.type == TransactionType.transfer && tx.toWalletId != null) {
-                                        toW = wallets.firstWhere((w) => w.id == tx.toWalletId, orElse: () => w);
-                                      }
-                                      
-                                      return Column(
-                                        children: [
-                                          _buildTransactionItem(tx, w, toW, currencyFormat),
-                                          if (i < txs.length - 1)
-                                            const Divider(height: 1, color: AppColors.borderColor, indent: 70, endIndent: 20),
-                                        ],
-                                      );
-                                    }).toList(),
-                                  ),
+                              ),
+                              Container(
+                                margin: const EdgeInsets.only(bottom: 24),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(24),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.borderColor.withOpacity(0.2),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            );
-                          },
-                        ),
-                ),
-              ),
-            ],
+                                child: Column(
+                                  children: txs.asMap().entries.map((entry) {
+                                    final i = entry.key;
+                                    final tx = entry.value;
+                                    final w = wallets.firstWhere((w) => w.id == tx.walletId, orElse: () => Wallet(name: 'Unknown', type: WalletType.cash, color: Colors.grey));
+                                    Wallet? toW;
+                                    if (tx.type == TransactionType.transfer && tx.toWalletId != null) {
+                                      toW = wallets.firstWhere((w) => w.id == tx.toWalletId, orElse: () => w);
+                                    }
+                                    
+                                    return Column(
+                                      children: [
+                                        _buildTransactionItem(tx, w, toW, currencyFormat),
+                                        if (i < txs.length - 1)
+                                          const Divider(height: 1, color: AppColors.borderColor, indent: 70, endIndent: 20),
+                                      ],
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                const SizedBox(height: 120),
+              ],
+            ),
           ),
         ],
       ),
@@ -201,12 +182,12 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
         width: double.infinity,
         padding: const EdgeInsets.all(28),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.1),
+          color: AppColors.cardPaleBlue,
           borderRadius: BorderRadius.circular(32),
-          border: Border.all(color: Colors.white.withOpacity(0.2)),
+          border: Border.all(color: AppColors.borderColor.withOpacity(0.5)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: AppColors.textDarkBlue.withValues(alpha: 0.05),
               blurRadius: 20,
               offset: const Offset(0, 10),
             ),
@@ -217,7 +198,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
             Text(
               'ARUS KAS ${DateFormat('MMMM yyyy').format(_selectedMonth).toUpperCase()}',
               style: const TextStyle(
-                color: Colors.white70,
+                color: AppColors.textMuted,
                 fontSize: 10,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1.5,
@@ -226,20 +207,21 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
             const SizedBox(height: 12),
             Text(
               format.format(balance),
-              style: const TextStyle(color: Colors.white, fontSize: 34, fontWeight: FontWeight.w900, letterSpacing: -0.5),
+              style: const TextStyle(color: AppColors.textDarkBlue, fontSize: 34, fontWeight: FontWeight.w900, letterSpacing: -0.5),
             ),
             const SizedBox(height: 28),
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: AppColors.borderColor.withOpacity(0.5)),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   _buildSimpleStat('MASUK', income, AppColors.ctaAqua),
-                  Container(width: 1, height: 30, color: Colors.white12),
+                  Container(width: 1, height: 30, color: AppColors.borderColor),
                   _buildSimpleStat('KELUAR', expense, Colors.redAccent),
                 ],
               ),
@@ -254,7 +236,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     final format = NumberFormat.compactCurrency(symbol: 'Rp', locale: 'id_ID');
     return Column(
       children: [
-        Text(label, style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold)),
+        Text(label, style: const TextStyle(color: AppColors.textMuted, fontSize: 10, fontWeight: FontWeight.bold)),
         const SizedBox(height: 6),
         Text(
           format.format(amount),
@@ -281,15 +263,15 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
               margin: const EdgeInsets.symmetric(horizontal: 6),
               padding: const EdgeInsets.symmetric(horizontal: 24),
               decoration: BoxDecoration(
-                color: isSelected ? Colors.white.withOpacity(0.2) : Colors.transparent,
+                color: isSelected ? AppColors.textDarkBlue : AppColors.cardPaleBlue.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: isSelected ? Colors.white.withOpacity(0.3) : Colors.white.withOpacity(0.1)),
+                border: Border.all(color: isSelected ? AppColors.textDarkBlue : AppColors.borderColor.withOpacity(0.5)),
               ),
               child: Center(
                 child: Text(
                   DateFormat('MMM yyyy').format(month),
                   style: TextStyle(
-                    color: isSelected ? Colors.white : Colors.white70,
+                    color: isSelected ? Colors.white : AppColors.textDarkBlue,
                     fontWeight: FontWeight.w900,
                     fontSize: 12,
                     letterSpacing: 0.5,

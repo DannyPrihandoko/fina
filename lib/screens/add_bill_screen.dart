@@ -184,216 +184,196 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close_rounded, color: Colors.white, size: 24),
+          icon: const Icon(Icons.close_rounded, color: AppColors.textDarkBlue, size: 24),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(isEditing ? 'Edit Tagihan' : 'Tambah Tagihan', style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.white)),
+        title: Text(isEditing ? 'Edit Tagihan' : 'Tambah Tagihan', style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.textDarkBlue)),
         centerTitle: false,
       ),
-      body: Stack(
-        children: [
-          // BACKGROUND GRADIENT
-          Container(
-            height: 300,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: AppColors.mainGradient,
-              ),
-            ),
-          ),
+      body: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: Column(
+          children: [
+            SizedBox(height: MediaQuery.of(context).padding.top + 20),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(32),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Amount Selection Area
+                    _buildSectionLabel('NOMINAL TAGIHAN'),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _amountController,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [ThousandSeparatorFormatter()],
+                      style: const TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: AppColors.textDarkBlue),
+                      decoration: InputDecoration(
+                        prefixText: 'Rp ',
+                        prefixStyle: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppColors.textDarkBlue),
+                        hintText: '0',
+                        filled: true,
+                        fillColor: Colors.white,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none),
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: const BorderSide(color: AppColors.borderColor)),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: const BorderSide(color: AppColors.ctaAqua, width: 2)),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) return 'Masukkan jumlah';
+                        if (CurrencyUtils.parse(value) <= 0) return 'Jumlah tidak valid';
+                        return null;
+                      },
+                    ),
+                    
+                    const SizedBox(height: 32),
 
-          SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            child: Column(
-              children: [
-                SizedBox(height: MediaQuery.of(context).padding.top + 80),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(32),
-                  decoration: const BoxDecoration(
-                    color: AppColors.background,
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-                  ),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Amount Selection Area
-                        _buildSectionLabel('NOMINAL TAGIHAN'),
-                        const SizedBox(height: 12),
-                        TextFormField(
-                          controller: _amountController,
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [ThousandSeparatorFormatter()],
-                          style: const TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: AppColors.textDarkBlue),
-                          decoration: InputDecoration(
-                            prefixText: 'Rp ',
-                            prefixStyle: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppColors.textDarkBlue),
-                            hintText: '0',
-                            filled: true,
-                            fillColor: Colors.white,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none),
-                            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: const BorderSide(color: AppColors.borderColor)),
-                            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: const BorderSide(color: AppColors.ctaAqua, width: 2)),
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) return 'Masukkan jumlah';
-                            if (CurrencyUtils.parse(value) <= 0) return 'Jumlah tidak valid';
-                            return null;
-                          },
-                        ),
-                        
-                        const SizedBox(height: 32),
+                    // Title Input
+                    _buildSectionLabel('NAMA TAGIHAN'),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _titleController,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                      decoration: _buildInputDecoration(
+                        hint: 'Misal: Listrik PLN',
+                        icon: Icons.receipt_rounded,
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) return 'Masukkan nama tagihan';
+                        return null;
+                      },
+                    ),
 
-                        // Title Input
-                        _buildSectionLabel('NAMA TAGIHAN'),
-                        const SizedBox(height: 12),
-                        TextFormField(
-                          controller: _titleController,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                          decoration: _buildInputDecoration(
-                            hint: 'Misal: Listrik PLN',
-                            icon: Icons.receipt_rounded,
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) return 'Masukkan nama tagihan';
-                            return null;
-                          },
-                        ),
+                    const SizedBox(height: 32),
 
-                        const SizedBox(height: 32),
-
-                        // Date Picker
-                        _buildSectionLabel('JATUH TEMPO'),
-                        const SizedBox(height: 12),
-                        InkWell(
-                          onTap: () => _selectDate(context),
+                    // Date Picker
+                    _buildSectionLabel('JATUH TEMPO'),
+                    const SizedBox(height: 12),
+                    InkWell(
+                      onTap: () => _selectDate(context),
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
                           borderRadius: BorderRadius.circular(20),
-                          child: Container(
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: AppColors.borderColor),
+                          border: Border.all(color: AppColors.borderColor),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.calendar_today_rounded, color: AppColors.ctaAqua, size: 20),
+                            const SizedBox(width: 16),
+                            Text(
+                              DateFormat('EEEE, dd MMMM yyyy').format(_selectedDate),
+                              style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.textDarkBlue, fontSize: 14),
                             ),
-                            child: Row(
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    // Category Toggle
+                    _buildSectionLabel('KATEGORI'),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: _categories.map((cat) {
+                        final isSelected = _category == cat;
+                        return GestureDetector(
+                          onTap: () => setState(() => _category = cat),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                            decoration: BoxDecoration(
+                              color: isSelected ? AppColors.textDarkBlue : Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: isSelected ? AppColors.textDarkBlue : AppColors.borderColor),
+                              boxShadow: isSelected ? [BoxShadow(color: AppColors.textDarkBlue.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))] : null,
+                            ),
+                            child: Text(
+                              cat,
+                              style: TextStyle(
+                                color: isSelected ? Colors.white : AppColors.textMuted,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 12,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    // Reminder Toggle Area
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: AppColors.cardPaleBlue.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
+                            child: const Icon(Icons.notifications_active_rounded, color: AppColors.ctaAqua, size: 24),
+                          ),
+                          const SizedBox(width: 16),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Icon(Icons.calendar_today_rounded, color: AppColors.ctaAqua, size: 20),
-                                const SizedBox(width: 16),
-                                Text(
-                                  DateFormat('EEEE, dd MMMM yyyy').format(_selectedDate),
-                                  style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.textDarkBlue, fontSize: 14),
-                                ),
+                                Text('Notifikasi Aktif', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: AppColors.textDarkBlue)),
+                                Text('Ingatkan H-1 & Jatuh Tempo', style: TextStyle(fontSize: 11, color: AppColors.textMuted, fontWeight: FontWeight.bold)),
                               ],
                             ),
                           ),
-                        ),
-
-                        const SizedBox(height: 32),
-
-                        // Category Toggle
-                        _buildSectionLabel('KATEGORI'),
-                        const SizedBox(height: 12),
-                        Wrap(
-                          spacing: 10,
-                          runSpacing: 10,
-                          children: _categories.map((cat) {
-                            final isSelected = _category == cat;
-                            return GestureDetector(
-                              onTap: () => setState(() => _category = cat),
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                                decoration: BoxDecoration(
-                                  color: isSelected ? AppColors.textDarkBlue : Colors.white,
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(color: isSelected ? AppColors.textDarkBlue : AppColors.borderColor),
-                                  boxShadow: isSelected ? [BoxShadow(color: AppColors.textDarkBlue.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))] : null,
-                                ),
-                                child: Text(
-                                  cat,
-                                  style: TextStyle(
-                                    color: isSelected ? Colors.white : AppColors.textMuted,
-                                    fontWeight: FontWeight.w900,
-                                    fontSize: 12,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-
-                        const SizedBox(height: 32),
-
-                        // Reminder Toggle Area
-                        Container(
-                          padding: const EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                            color: AppColors.cardPaleBlue.withOpacity(0.3),
-                            borderRadius: BorderRadius.circular(24),
+                          Switch.adaptive(
+                            value: _reminderEnabled,
+                            activeColor: AppColors.ctaAqua,
+                            activeTrackColor: AppColors.ctaAqua.withOpacity(0.2),
+                            onChanged: (v) => setState(() => _reminderEnabled = v),
                           ),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
-                                child: const Icon(Icons.notifications_active_rounded, color: AppColors.ctaAqua, size: 24),
-                              ),
-                              const SizedBox(width: 16),
-                              const Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('Notifikasi Aktif', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: AppColors.textDarkBlue)),
-                                    Text('Ingatkan H-1 & Jatuh Tempo', style: TextStyle(fontSize: 11, color: AppColors.textMuted, fontWeight: FontWeight.bold)),
-                                  ],
-                                ),
-                              ),
-                              Switch.adaptive(
-                                value: _reminderEnabled,
-                                activeColor: AppColors.ctaAqua,
-                                activeTrackColor: AppColors.ctaAqua.withOpacity(0.2),
-                                onChanged: (v) => setState(() => _reminderEnabled = v),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(height: 48),
-
-                        // Save Button
-                        SizedBox(
-                          width: double.infinity,
-                          height: 64,
-                          child: ElevatedButton(
-                            onPressed: _saveBill,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.textDarkBlue,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                              elevation: 10,
-                              shadowColor: AppColors.primary.withOpacity(0.3),
-                            ),
-                            child: Text(
-                              isEditing ? 'SIMPAN PERUBAHAN' : 'JADWALKAN TAGIHAN', 
-                              style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.5, fontSize: 14)
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 100),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
+
+                    const SizedBox(height: 48),
+
+                    // Save Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 64,
+                      child: ElevatedButton(
+                        onPressed: _saveBill,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.textDarkBlue,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                          elevation: 10,
+                          shadowColor: AppColors.primary.withOpacity(0.3),
+                        ),
+                        child: Text(
+                          isEditing ? 'SIMPAN PERUBAHAN' : 'JADWALKAN TAGIHAN', 
+                          style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.5, fontSize: 14)
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 100),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

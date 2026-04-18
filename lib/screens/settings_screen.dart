@@ -36,129 +36,107 @@ class SettingsScreen extends ConsumerWidget {
     final notificationsEnabled = settings.isNotificationsEnabled;
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
       backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.textDarkBlue, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Pengaturan', style: TextStyle(fontWeight: FontWeight.w900, color: Colors.white)),
+        title: const Text('Pengaturan', style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.textDarkBlue)),
         centerTitle: false,
       ),
-      body: Stack(
-        children: [
-          // BACKGROUND GRADIENT
-          Container(
-            height: 350,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: AppColors.mainGradient,
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          SliverPadding(
+            padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 20, left: 24, right: 24),
+            sliver: SliverToBoxAdapter(
+              child: Column(
+                children: [
+                  // Profile Header (Excluvise Look)
+                  _buildProfileHeader(),
+                  const SizedBox(height: 32),
+                ],
               ),
             ),
           ),
 
-          CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              SliverPadding(
-                padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 64, left: 24, right: 24),
-                sliver: SliverToBoxAdapter(
-                  child: Column(
-                    children: [
-                      // Profile Header (Excluvise Look)
-                      _buildProfileHeader(),
-                      const SizedBox(height: 32),
-                    ],
-                  ),
-                ),
-              ),
-
-              SliverToBoxAdapter(
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-                  decoration: const BoxDecoration(
-                    color: AppColors.background,
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildSectionLabel('NOTIFIKASI'),
-                      const SizedBox(height: 16),
-                      _buildSettingsGroup([
-                        _buildSwitchItem(
-                          icon: Icons.notifications_active_rounded,
-                          iconColor: AppColors.ctaAqua,
-                          title: 'Aktifkan Notifikasi',
-                          subtitle: 'Terima pengingat tagihan harian',
-                          value: notificationsEnabled,
-                          onChanged: (value) => _toggleNotifications(ref, context, value),
-                        ),
-                        if (notificationsEnabled) ...[
-                          _buildSettingsItem(
-                            icon: Icons.send_rounded,
-                            iconColor: AppColors.primary,
-                            title: 'Tes Notifikasi',
-                            onTap: () => NotificationService().showTestNotification(),
-                          ),
-                        ],
-                      ]),
-
-                      const SizedBox(height: 32),
-
-                      _buildSectionLabel('UMUM'),
-                      const SizedBox(height: 16),
-                      _buildSettingsGroup([
-                        _buildSettingsItem(
-                          icon: Icons.language_rounded,
-                          iconColor: Colors.blue,
-                          title: 'Bahasa',
-                          trailingText: 'Indonesia',
-                        ),
-                        _buildSettingsItem(
-                          icon: Icons.dark_mode_rounded,
-                          iconColor: Colors.deepPurple,
-                          title: 'Mode Gelap',
-                          trailingText: 'Sistem',
-                        ),
-                        _buildSettingsItem(
-                          icon: Icons.verified_user_rounded,
-                          iconColor: Colors.teal,
-                          title: 'Keamanan (Biometrik)',
-                          trailingText: 'Nonaktif',
-                        ),
-                        _buildSettingsItem(
-                          icon: Icons.info_rounded,
-                          iconColor: Colors.orange,
-                          title: 'Tentang Fina',
-                          trailingText: 'v1.0.0',
-                        ),
-                      ]),
-
-                      const SizedBox(height: 60),
-                      Center(
-                        child: Text(
-                          'FINA APP • MADE WITH LOVE',
-                          style: TextStyle(
-                            color: AppColors.textMuted.withOpacity(0.5),
-                            fontSize: 10,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 2,
-                          ),
-                        ),
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            sliver: SliverToBoxAdapter(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSectionLabel('NOTIFIKASI'),
+                  const SizedBox(height: 16),
+                  _buildSettingsGroup([
+                    _buildSwitchItem(
+                      icon: Icons.notifications_active_rounded,
+                      iconColor: AppColors.ctaAqua,
+                      title: 'Aktifkan Notifikasi',
+                      subtitle: 'Terima pengingat tagihan harian',
+                      value: notificationsEnabled,
+                      onChanged: (value) => _toggleNotifications(ref, context, value),
+                    ),
+                    if (notificationsEnabled) ...[
+                      _buildSettingsItem(
+                        icon: Icons.send_rounded,
+                        iconColor: AppColors.primary,
+                        title: 'Tes Notifikasi',
+                        onTap: () => NotificationService().showTestNotification(),
                       ),
-                      const SizedBox(height: 120),
                     ],
+                  ]),
+
+                  const SizedBox(height: 32),
+
+                  _buildSectionLabel('UMUM'),
+                  const SizedBox(height: 16),
+                  _buildSettingsGroup([
+                    _buildSettingsItem(
+                      icon: Icons.language_rounded,
+                      iconColor: Colors.blue,
+                      title: 'Bahasa',
+                      trailingText: 'Indonesia',
+                    ),
+                    _buildSettingsItem(
+                      icon: Icons.dark_mode_rounded,
+                      iconColor: Colors.deepPurple,
+                      title: 'Mode Gelap',
+                      trailingText: 'Sistem',
+                    ),
+                    _buildSettingsItem(
+                      icon: Icons.verified_user_rounded,
+                      iconColor: Colors.teal,
+                      title: 'Keamanan (Biometrik)',
+                      trailingText: 'Nonaktif',
+                    ),
+                    _buildSettingsItem(
+                      icon: Icons.info_rounded,
+                      iconColor: Colors.orange,
+                      title: 'Tentang Fina',
+                      trailingText: 'v1.0.0',
+                    ),
+                  ]),
+
+                  const SizedBox(height: 60),
+                  Center(
+                    child: Text(
+                      'FINA APP • MADE WITH LOVE',
+                      style: TextStyle(
+                        color: AppColors.textMuted.withOpacity(0.5),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 2,
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 120),
+                ],
               ),
-            ],
+            ),
           ),
         ],
       ),
@@ -169,12 +147,12 @@ class SettingsScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
+        color: AppColors.cardPaleBlue,
         borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: Colors.white.withOpacity(0.2)),
+        border: Border.all(color: AppColors.borderColor.withOpacity(0.5)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: AppColors.textDarkBlue.withValues(alpha: 0.05),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -186,11 +164,11 @@ class SettingsScreen extends ConsumerWidget {
             width: 70,
             height: 70,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: AppColors.white,
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.white.withOpacity(0.4), width: 2),
+              border: Border.all(color: AppColors.borderColor, width: 2),
             ),
-            child: const Icon(Icons.person_rounded, color: Colors.white, size: 40),
+            child: const Icon(Icons.person_rounded, color: AppColors.textDarkBlue, size: 40),
           ),
           const SizedBox(width: 20),
           Expanded(
@@ -199,7 +177,7 @@ class SettingsScreen extends ConsumerWidget {
               children: [
                 const Text(
                   'User Fina',
-                  style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900),
+                  style: TextStyle(color: AppColors.textDarkBlue, fontSize: 22, fontWeight: FontWeight.w900),
                 ),
                 const SizedBox(height: 4),
                 Container(
@@ -218,7 +196,7 @@ class SettingsScreen extends ConsumerWidget {
           ),
           IconButton(
             onPressed: () {},
-            icon: const Icon(Icons.edit_note_rounded, color: Colors.white70, size: 28),
+            icon: const Icon(Icons.edit_note_rounded, color: AppColors.textMuted, size: 28),
           ),
         ],
       ),
