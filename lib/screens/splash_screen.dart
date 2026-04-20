@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'main_screen.dart';
 import '../theme/colors.dart';
+import '../services/notification_service.dart';
 
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 
@@ -23,6 +24,9 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     // Remove native splash when Flutter UI starts rendering
     FlutterNativeSplash.remove();
 
+    // Request notification permissions early
+    _requestNotificationPermissions();
+
     _controller = AnimationController(
        vsync: this,
        duration: const Duration(milliseconds: 1500),
@@ -35,7 +39,16 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     );
 
     _controller.forward();
+  }
 
+  Future<void> _requestNotificationPermissions() async {
+    await NotificationService().requestPermissions();
+    
+    // Navigate after a delay regardless of permission result
+    _navigateToHome();
+  }
+
+  void _navigateToHome() {
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
         Navigator.of(context).pushReplacement(

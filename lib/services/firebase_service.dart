@@ -23,7 +23,7 @@ class FirebaseService {
     }
   }
 
-  Future<void> publishSnapshot(Map<String, dynamic> data) async {
+  Future<void> publishSnapshot(Map<String, dynamic> data, {String? userName}) async {
     final user = await ensureLoggedIn();
     if (user == null) return;
 
@@ -31,6 +31,7 @@ class FirebaseService {
       // Create/Update Profile
       await _db.collection('profiles').doc(user.uid).set({
         'uid': user.uid,
+        'name': userName ?? 'User Fina',
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
@@ -38,6 +39,7 @@ class FirebaseService {
       await _db.collection('snapshots').doc(user.uid).set({
         ...data,
         'uid': user.uid,
+        'name': userName ?? 'User Fina', // Redundancy for easy access
         'updatedAt': FieldValue.serverTimestamp(),
       });
     } catch (e) {

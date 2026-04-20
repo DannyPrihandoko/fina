@@ -3,6 +3,7 @@ import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import '../models/bill.dart';
 
@@ -19,7 +20,7 @@ class NotificationService {
     tz.setLocalLocation(tz.getLocation(timeZoneName));
 
     const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+        AndroidInitializationSettings('@mipmap/launcher_icon');
 
     const DarwinInitializationSettings initializationSettingsDarwin = DarwinInitializationSettings(
       requestAlertPermission: false,
@@ -39,18 +40,34 @@ class NotificationService {
       },
     );
 
-    // Create default channel for Android
+    // Create default channels for Android
     if (Platform.isAndroid) {
-      const AndroidNotificationChannel channel = AndroidNotificationChannel(
+      final androidPlugin = _notificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+      
+      // 1. Bill Reminder Channel
+      const AndroidNotificationChannel billChannel = AndroidNotificationChannel(
         'bill_channel',
         'Tagihan',
         description: 'Pemberitahuan untuk tagihan mendatang',
         importance: Importance.max,
+        playSound: true,
+        enableVibration: true,
       );
 
-      await _notificationsPlugin
-          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-          ?.createNotificationChannel(channel);
+      // 2. Test Notification Channel
+      const AndroidNotificationChannel testChannel = AndroidNotificationChannel(
+        'test_channel_v2', // Changed ID to force refresh
+        'Tes Notifikasi',
+        description: 'Digunakan untuk mencoba fitur notifikasi',
+        importance: Importance.max,
+        playSound: true,
+        enableVibration: true,
+        showBadge: true,
+      );
+
+      await androidPlugin?.createNotificationChannel(billChannel);
+      await androidPlugin?.createNotificationChannel(testChannel);
+      debugPrint('Notification Channels Created Successfully');
     }
   }
 
@@ -86,52 +103,57 @@ class NotificationService {
   }
 
   Future<void> scheduleBillReminders(Bill bill) async {
-    if (bill.id == null) return;
+    try {
+      if (bill.id == null) return;
 
-    final dueDate = bill.dueDate;
-    final now = DateTime.now();
+      final dueDate = bill.dueDate;
+      final now = DateTime.now();
 
-    // 1. Reminder on the Day Of (09:00 AM)
-    final scheduledDateDayOf = tz.TZDateTime.from(
-      DateTime(dueDate.year, dueDate.month, dueDate.day, 9, 0),
-      tz.local,
-    );
-
-    if (scheduledDateDayOf.isAfter(now)) {
-      await _notificationsPlugin.zonedSchedule(
-        bill.id! * 2, // Unique ID for Day Of
-        'fina: Jatuh Tempo Hari Ini',
-        'Tagihan "${bill.title}" jatuh tempo hari ini sebesar ${NumberFormat.currency(symbol: 'Rp', decimalDigits: 0).format(bill.amount)}',
-        scheduledDateDayOf,
-        const NotificationDetails(
-          android: AndroidNotificationDetails('bill_channel', 'Tagihan', importance: Importance.max),
-          iOS: DarwinNotificationDetails(),
-        ),
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+      // 1. Reminder on the Day Of (09:00 AM)
+      final scheduledDateDayOf = tz.TZDateTime.from(
+        DateTime(dueDate.year, dueDate.month, dueDate.day, 9, 0),
+        tz.local,
       );
-    }
 
-    // 2. Reminder H-1 (09:00 AM)
-    final oneDayBefore = dueDate.subtract(const Duration(days: 1));
-    final scheduledDateH1 = tz.TZDateTime.from(
-      DateTime(oneDayBefore.year, oneDayBefore.month, oneDayBefore.day, 9, 0),
-      tz.local,
-    );
+      if (scheduledDateDayOf.isAfter(now)) {
+        await _notificationsPlugin.zonedSchedule(
+          bill.id! * 2, // Unique ID for Day Of
+          'fina: Jatuh Tempo Hari Ini',
+          'Tagihan "${bill.title}" jatuh tempo hari ini sebesar ${NumberFormat.currency(symbol: 'Rp', decimalDigits: 0).format(bill.amount)}',
+          scheduledDateDayOf,
+          const NotificationDetails(
+            android: AndroidNotificationDetails('bill_channel', 'Tagihan', importance: Importance.max),
+            iOS: DarwinNotificationDetails(),
+          ),
+          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+        );
+      }
 
-    if (scheduledDateH1.isAfter(now)) {
-      await _notificationsPlugin.zonedSchedule(
-        bill.id! * 2 + 1, // Unique ID for H-1
-        'fina: Tagihan Besok',
-        'Besok tagihan "${bill.title}" akan jatuh tempo. Siapkan dana Anda!',
-        scheduledDateH1,
-        const NotificationDetails(
-          android: AndroidNotificationDetails('bill_channel', 'Tagihan', importance: Importance.max),
-          iOS: DarwinNotificationDetails(),
-        ),
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+      // 2. Reminder H-1 (09:00 AM)
+      final oneDayBefore = dueDate.subtract(const Duration(days: 1));
+      final scheduledDateH1 = tz.TZDateTime.from(
+        DateTime(oneDayBefore.year, oneDayBefore.month, oneDayBefore.day, 9, 0),
+        tz.local,
       );
+
+      if (scheduledDateH1.isAfter(now)) {
+        await _notificationsPlugin.zonedSchedule(
+          bill.id! * 2 + 1, // Unique ID for H-1
+          'fina: Tagihan Besok',
+          'Besok tagihan "${bill.title}" akan jatuh tempo. Siapkan dana Anda!',
+          scheduledDateH1,
+          const NotificationDetails(
+            android: AndroidNotificationDetails('bill_channel', 'Tagihan', importance: Importance.max),
+            iOS: DarwinNotificationDetails(),
+          ),
+          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+        );
+      }
+    } catch (e) {
+      // Log error but don't block the UI flow
+      debugPrint('Error scheduling reminders: $e');
     }
   }
 
@@ -141,25 +163,37 @@ class NotificationService {
   }
 
   Future<void> showTestNotification() async {
-    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-      'test_channel',
-      'Test Notifications',
-      channelDescription: 'Used for testing notifications',
-      importance: Importance.max,
-      priority: Priority.high,
-    );
+    try {
+      const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+        'test_channel_v2',
+        'Tes Notifikasi',
+        channelDescription: 'Digunakan untuk mencoba fitur notifikasi',
+        importance: Importance.max,
+        priority: Priority.high,
+        ticker: 'ticker',
+        fullScreenIntent: true,
+        category: AndroidNotificationCategory.status,
+      );
 
-    const NotificationDetails notificationDetails = NotificationDetails(
-      android: androidDetails,
-      iOS: DarwinNotificationDetails(),
-    );
+      const NotificationDetails notificationDetails = NotificationDetails(
+        android: androidDetails,
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        ),
+      );
 
-    await _notificationsPlugin.show(
-      0,
-      'fina',
-      'Notifikasi berhasil diaktifkan!',
-      notificationDetails,
-    );
+      await _notificationsPlugin.show(
+        999, // Static ID for test
+        'fina',
+        'Notifikasi berhasil diaktifkan! 🚀',
+        notificationDetails,
+      );
+      debugPrint('Test Notification Sent Successfully');
+    } catch (e) {
+      debugPrint('Error showing test notification: $e');
+    }
   }
 
   Future<bool> isNotificationsEnabled() async {

@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart' show Color, IconData;
 import 'package:sqflite/sqflite.dart' hide Transaction;
 import 'package:path/path.dart';
 import '../models/transaction.dart';
 import '../models/bill.dart';
 import '../models/wallet.dart';
 import '../models/budget.dart';
+import '../models/financial_goal.dart';
 
 class DatabaseService {
   static final DatabaseService instance = DatabaseService._init();
@@ -24,7 +24,7 @@ class DatabaseService {
 
     return await openDatabase(
       path,
-      version: 4,
+      version: 5,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -90,6 +90,18 @@ CREATE TABLE budgets (
       'type': 'bank',
       'color': 0xFF42A5F5, // Blue
     });
+
+    await db.execute('''
+CREATE TABLE financial_goals (
+  id $idType,
+  title $textType,
+  targetAmount $numType,
+  savedAmount REAL NOT NULL DEFAULT 0,
+  deadline $textType,
+  icon TEXT NOT NULL DEFAULT '🎯',
+  color TEXT NOT NULL DEFAULT '0xFF00BFA5'
+)
+''');
   }
 
   Future _upgradeDB(Database db, int oldVersion, int newVersion) async {
@@ -120,6 +132,20 @@ CREATE TABLE budgets (
 
     if (oldVersion < 4) {
       await db.execute('ALTER TABLE bills ADD COLUMN isPaid INTEGER NOT NULL DEFAULT 0');
+    }
+
+    if (oldVersion < 5) {
+      await db.execute('''
+CREATE TABLE financial_goals (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL,
+  targetAmount REAL NOT NULL,
+  savedAmount REAL NOT NULL DEFAULT 0,
+  deadline TEXT NOT NULL,
+  icon TEXT NOT NULL DEFAULT '🎯',
+  color TEXT NOT NULL DEFAULT '0xFF00BFA5'
+)
+''');
     }
   }
 
@@ -218,5 +244,32 @@ CREATE TABLE budgets (
   Future close() async {
     final db = await instance.database;
     db.close();
+  }
+
+  // Financial Goal CRUD
+  Future<int> createGoal(FinancialGoal goal) async {
+    final db = await instance.database;
+    return await db.insert('financial_goals', goal.toMap());
+  }
+
+  Future<List<FinancialGoal>> getAllGoals() async {
+    final db = await instance.database;
+    final result = await db.query('financial_goals', orderBy: 'deadline ASC');
+    return result.map((json) => FinancialGoal.fromMap(json)).toList();
+  }
+
+  Future<int> updateGoal(FinancialGoal goal) async {
+    final db = await instance.database;
+    return await db.update(
+      'financial_goals',
+      goal.toMap(),
+      where: 'id = ?',
+      whereArgs: [goal.id],
+    );
+  }
+
+  Future<int> deleteGoal(int id) async {
+    final db = await instance.database;
+    return await db.delete('financial_goals', where: 'id = ?', whereArgs: [id]);
   }
 }

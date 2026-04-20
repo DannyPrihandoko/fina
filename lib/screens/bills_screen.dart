@@ -23,88 +23,122 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
     super.initState();
     if (widget.showSuccessModal) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _showSuccessDialogWith(widget.successMessage ?? 'Tagihan Berhasil!');
+        if (mounted) {
+          _showSuccessDialog(widget.successMessage ?? 'Tagihan Berhasil!');
+        }
       });
     }
   }
 
-  void _showSuccessDialogWith(String message) {
-    // Show SnackBar ("Bar")
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(Icons.check_circle_rounded, color: Theme.of(context).colorScheme.onSecondary, size: 20),
-            const SizedBox(width: 12),
-            Text(
-              message,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.onSecondary,
-                fontSize: 13,
+  void _showSuccessDialog(String message) {
+    if (!mounted) return;
+    
+    final isUpdate = message.toLowerCase().contains('update') || 
+                     message.toLowerCase().contains('perubahan') || 
+                     message.toLowerCase().contains('simpan');
+    final isPayment = message.toLowerCase().contains('pembayaran');
+    final subtitle = isPayment
+        ? 'Tagihan telah dibayarkan dan dicatat sebagai pengeluaran.'
+        : isUpdate
+            ? 'Data tagihan Anda telah diperbarui ke sistem.'
+            : 'Data tagihan Anda telah berhasil disimpan.';
+
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Success Dialog',
+      barrierColor: Colors.black54,
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (ctx, anim1, anim2) {
+        return Container();
+      },
+      transitionBuilder: (ctx, anim1, anim2, child) {
+        final curvedAnim = CurvedAnimation(parent: anim1, curve: Curves.easeOutBack);
+        return ScaleTransition(
+          scale: curvedAnim,
+          child: FadeTransition(
+            opacity: anim1,
+            child: Dialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+              backgroundColor: Theme.of(ctx).cardTheme.color,
+              elevation: 20,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Animated check icon
+                    TweenAnimationBuilder<double>(
+                      tween: Tween(begin: 0.0, end: 1.0),
+                      duration: const Duration(milliseconds: 600),
+                      curve: Curves.elasticOut,
+                      builder: (context, value, child) {
+                        return Transform.scale(
+                          scale: value,
+                          child: child,
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Theme.of(ctx).colorScheme.secondary.withOpacity(0.2),
+                              Theme.of(ctx).colorScheme.primary.withOpacity(0.1),
+                            ],
+                          ),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.check_circle_rounded,
+                          color: Theme.of(ctx).colorScheme.secondary,
+                          size: 56,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      message,
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        color: Theme.of(ctx).colorScheme.onSurface,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      subtitle,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Theme.of(ctx).colorScheme.onSurface.withOpacity(0.6),
+                        fontSize: 14,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.of(ctx).pop(),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Theme.of(ctx).colorScheme.primary,
+                          foregroundColor: Theme.of(ctx).colorScheme.onPrimary,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          elevation: 4,
+                          shadowColor: Theme.of(ctx).colorScheme.primary.withOpacity(0.3),
+                        ),
+                        child: const Text('OK', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15, letterSpacing: 1)),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ],
-        ),
-        backgroundColor: Theme.of(context).colorScheme.secondary,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        margin: const EdgeInsets.fromLTRB(24, 0, 24, 100),
-        duration: const Duration(seconds: 3),
-      ),
-    );
-
-    // Also show the Dialog (Notification)
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        backgroundColor: Theme.of(context).cardTheme.color,
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.secondary.withOpacity(0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(Icons.check_circle_rounded, color: Theme.of(context).colorScheme.secondary, size: 48),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                message,
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                message == 'Update Berhasil!' 
-                    ? 'Data tagihan Anda telah diperbarui ke sistem.'
-                    : 'Data tagihan Anda telah berhasil disimpan.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
-              ),
-              const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  ),
-                  child: const Text('OK', style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-              ),
-            ],
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -212,9 +246,12 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'bills_fab',
         onPressed: () async {
-          final result = await Navigator.push(context, MaterialPageRoute(builder: (context) => const AddBillScreen()));
+          final result = await Navigator.push<String>(
+            context,
+            MaterialPageRoute(builder: (context) => const AddBillScreen()),
+          );
           if (result != null && mounted) {
-            _showSuccessDialogWith(result == 'update' ? 'Update Berhasil!' : 'Tagihan Berhasil!');
+            _showSuccessDialog(result == 'update' ? 'Data Berhasil Disimpan!' : 'Tagihan Berhasil Dijadwalkan!');
           }
         },
         label: const Text('TAMBAH TAGIHAN', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1)),
@@ -338,7 +375,7 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
-                              isOverdue ? 'TERLAMBAT' : 'SEGARA',
+                              isOverdue ? 'TERLAMBAT' : 'SEGERA',
                               style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.5),
                             ),
                           ),
@@ -348,12 +385,12 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
                             constraints: const BoxConstraints(),
                             icon: Icon(Icons.edit_note_rounded, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5), size: 26),
                             onPressed: () async {
-                              final result = await Navigator.push(
+                              final result = await Navigator.push<String>(
                                 context,
                                 MaterialPageRoute(builder: (context) => AddBillScreen(existingBill: bill)),
                               );
                               if (result != null && mounted) {
-                                _showSuccessDialogWith(result == 'update' ? 'Update Berhasil!' : 'Tagihan Berhasil!');
+                                _showSuccessDialog(result == 'update' ? 'Data Berhasil Disimpan!' : 'Tagihan Berhasil Dijadwalkan!');
                               }
                             },
                           ),
@@ -506,60 +543,7 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
   }
 
   void _showPaymentSuccess(BuildContext context) {
-    // Show SnackBar ("Bar")
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(Icons.check_circle_rounded, color: Theme.of(context).colorScheme.onSecondary, size: 20),
-            const SizedBox(width: 12),
-            const Text(
-              'Pembayaran Berhasil!',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-            ),
-          ],
-        ),
-        backgroundColor: Theme.of(context).colorScheme.secondary,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        margin: const EdgeInsets.fromLTRB(24, 0, 24, 40),
-      ),
-    );
-
-    // Show Dialog
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        backgroundColor: Theme.of(context).cardTheme.color,
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.check_circle_outline_rounded, color: Colors.green, size: 64),
-              const SizedBox(height: 24),
-              Text('Pembayaran Berhasil!', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onSurface)),
-              const SizedBox(height: 12),
-              Text('Tagihan telah dibayarkan dan dicatat sebagai pengeluaran.', textAlign: TextAlign.center, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
-              const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  ),
-                  child: const Text('OK'),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    _showSuccessDialog('Pembayaran Berhasil!');
   }
 
   Widget _buildEmptyState(BuildContext context) {

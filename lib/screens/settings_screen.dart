@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import '../theme/colors.dart';
 import '../services/notification_service.dart';
 import '../providers/settings_provider.dart';
@@ -30,6 +32,46 @@ class SettingsScreen extends ConsumerWidget {
     }
   }
 
+  Future<void> _pickImage(WidgetRef ref) async {
+    final picker = ImagePicker();
+    final image = await picker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      await ref.read(settingsProvider.notifier).setProfilePhoto(image.path);
+    }
+  }
+
+  void _editName(WidgetRef ref, BuildContext context, String currentName) {
+    final controller = TextEditingController(text: currentName);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Nama Profil'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(hintText: 'Masukkan nama Anda'),
+          autofocus: true,
+          textCapitalization: TextCapitalization.words,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('BATAL'),
+          ),
+          TextButton(
+            onPressed: () {
+              final newName = controller.text.trim();
+              if (newName.isNotEmpty) {
+                ref.read(settingsProvider.notifier).setUserName(newName);
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('SIMPAN'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
@@ -56,7 +98,7 @@ class SettingsScreen extends ConsumerWidget {
               child: Column(
                 children: [
                   // Profile Header (Excluvise Look)
-                  _buildProfileHeader(context),
+                  _buildProfileHeader(context, ref),
                   const SizedBox(height: 32),
                 ],
               ),
@@ -89,7 +131,17 @@ class SettingsScreen extends ConsumerWidget {
                           icon: Icons.send_rounded,
                           iconColor: Theme.of(context).colorScheme.primary,
                           title: 'Tes Notifikasi',
-                          onTap: () => NotificationService().showTestNotification(),
+                          onTap: () async {
+                            try {
+                              await NotificationService().showTestNotification();
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Gagal mengirim notifikasi: $e')),
+                                );
+                              }
+                            }
+                          },
                         ),
                       ],
                     ],
@@ -156,8 +208,10 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildProfileHeader(BuildContext context) {
+  Widget _buildProfileHeader(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -174,15 +228,26 @@ class SettingsScreen extends ConsumerWidget {
       ),
       child: Row(
         children: [
-          Container(
-            width: 70,
-            height: 70,
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.darkBackground : AppColors.white,
-              shape: BoxShape.circle,
-              border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.borderColor, width: 2),
+          GestureDetector(
+            onTap: () => _pickImage(ref),
+            child: Container(
+              width: 70,
+              height: 70,
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkBackground : AppColors.white,
+                shape: BoxShape.circle,
+                border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.borderColor, width: 2),
+                image: settings.profilePhotoPath != null
+                    ? DecorationImage(
+                        image: FileImage(File(settings.profilePhotoPath!)),
+                        fit: BoxFit.cover,
+                      )
+                    : null,
+              ),
+              child: settings.profilePhotoPath == null
+                  ? Icon(Icons.person_rounded, color: Theme.of(context).textTheme.bodyLarge?.color, size: 40)
+                  : null,
             ),
-            child: Icon(Icons.person_rounded, color: Theme.of(context).textTheme.bodyLarge?.color, size: 40),
           ),
           const SizedBox(width: 20),
           Expanded(
@@ -190,7 +255,7 @@ class SettingsScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'User Fina',
+                  settings.userName,
                   style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color, fontSize: 22, fontWeight: FontWeight.w900),
                 ),
                 const SizedBox(height: 4),
@@ -209,7 +274,7 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ),
           IconButton(
-            onPressed: () {},
+            onPressed: () => _editName(ref, context, settings.userName),
             icon: Icon(Icons.edit_note_rounded, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5), size: 28),
           ),
         ],

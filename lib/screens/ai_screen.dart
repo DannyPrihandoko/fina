@@ -26,11 +26,11 @@ class _AIScreenState extends ConsumerState<AIScreen> {
   bool _isTyping = false;
 
   final List<String> _quickActions = [
-    'Analisis keuangan saya',
-    'Cek saldo kas',
-    'Evaluasi dana darurat',
-    'Daftar tagihan rutin',
-    'Bantuan fitur',
+    'Gimana kondisi uangku?',
+    'Analisis anggaran',
+    'Bandingkan bulan lalu',
+    'Dana darurat cukup?',
+    'Top pengeluaranku',
   ];
 
   void _sendMessage([String? text]) {
@@ -51,11 +51,15 @@ class _AIScreenState extends ConsumerState<AIScreen> {
 
       final transactions = ref.read(transactionsProvider);
       final bills = ref.read(billsProvider);
+      final budgets = ref.read(budgetsProvider);
+      final wallets = ref.read(walletsProvider);
       
       final response = _aiEngine.processQuery(
         query: query,
         transactions: transactions,
         bills: bills,
+        budgets: budgets,
+        wallets: wallets,
       );
 
       setState(() {

@@ -101,7 +101,14 @@ class SocialNotifier extends StateNotifier<SocialState> {
     if (data != null) {
       state = state.copyWith(
         connections: state.connections.map((e) {
-          if (e.uid == uid) return e.copyWith(lastData: data);
+          if (e.uid == uid) {
+            // Update name if present in shared data
+            final sharedName = data['name'] as String?;
+            return e.copyWith(
+              lastData: data,
+              name: sharedName ?? e.name,
+            );
+          }
           return e;
         }).toList(),
       );

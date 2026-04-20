@@ -4,6 +4,7 @@ import '../models/transaction.dart';
 import '../models/bill.dart';
 import '../models/wallet.dart';
 import '../models/budget.dart';
+import '../models/financial_goal.dart';
 
 import 'package:fina/providers/settings_provider.dart';
 import 'package:flutter/foundation.dart';
@@ -192,3 +193,42 @@ final totalNetWorthProvider = Provider((ref) {
   }
   return total;
 });
+
+// GOALS PROVIDER
+final goalsProvider = StateNotifierProvider<GoalsNotifier, List<FinancialGoal>>((ref) {
+  return GoalsNotifier(ref.watch(databaseServiceProvider));
+});
+
+class GoalsNotifier extends StateNotifier<List<FinancialGoal>> {
+  final DatabaseService _dbService;
+
+  GoalsNotifier(this._dbService) : super([]) {
+    loadGoals();
+  }
+
+  Future<void> loadGoals() async {
+    state = await _dbService.getAllGoals();
+  }
+
+  Future<int> addGoal(FinancialGoal goal) async {
+    final id = await _dbService.createGoal(goal);
+    await loadGoals();
+    return id;
+  }
+
+  Future<void> updateGoal(FinancialGoal goal) async {
+    await _dbService.updateGoal(goal);
+    await loadGoals();
+  }
+
+  Future<void> removeGoal(int id) async {
+    await _dbService.deleteGoal(id);
+    await loadGoals();
+  }
+
+  Future<void> addSavings(FinancialGoal goal, double amount) async {
+    final updated = goal.copyWith(savedAmount: goal.savedAmount + amount);
+    await _dbService.updateGoal(updated);
+    await loadGoals();
+  }
+}

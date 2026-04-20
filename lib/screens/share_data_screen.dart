@@ -7,6 +7,7 @@ import 'package:fina/services/firebase_service.dart';
 import 'package:fina/providers/social_provider.dart';
 import 'package:fina/providers/database_provider.dart';
 import 'package:fina/models/transaction.dart';
+import 'package:fina/providers/settings_provider.dart';
 import 'dart:convert';
 
 class ShareDataScreen extends ConsumerStatefulWidget {
@@ -55,7 +56,9 @@ class _ShareDataScreenState extends ConsumerState<ShareDataScreen> with SingleTi
         }).toList(),
       };
 
-      await FirebaseService().publishSnapshot(snapshot);
+      final settings = ref.read(settingsProvider);
+
+      await FirebaseService().publishSnapshot(snapshot, userName: settings.userName);
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
