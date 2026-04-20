@@ -13,19 +13,23 @@ final settingsProvider = StateNotifierProvider<SettingsNotifier, SettingsState>(
 class SettingsState {
   final bool isNotificationsEnabled;
   final bool isInsightDismissed;
+  final bool isDarkMode;
 
   SettingsState({
     required this.isNotificationsEnabled,
     required this.isInsightDismissed,
+    required this.isDarkMode,
   });
 
   SettingsState copyWith({
     bool? isNotificationsEnabled,
     bool? isInsightDismissed,
+    bool? isDarkMode,
   }) {
     return SettingsState(
       isNotificationsEnabled: isNotificationsEnabled ?? this.isNotificationsEnabled,
       isInsightDismissed: isInsightDismissed ?? this.isInsightDismissed,
+      isDarkMode: isDarkMode ?? this.isDarkMode,
     );
   }
 }
@@ -35,16 +39,23 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
 
   static const _notificationsKey = 'notifications_enabled';
   static const _insightKey = 'insight_dismissed';
+  static const _darkModeKey = 'dark_mode';
 
   SettingsNotifier(this._prefs)
       : super(SettingsState(
           isNotificationsEnabled: _prefs.getBool(_notificationsKey) ?? false,
           isInsightDismissed: _prefs.getBool(_insightKey) ?? false,
+          isDarkMode: _prefs.getBool(_darkModeKey) ?? false,
         ));
 
   Future<void> setNotificationsEnabled(bool value) async {
     await _prefs.setBool(_notificationsKey, value);
     state = state.copyWith(isNotificationsEnabled: value);
+  }
+
+  Future<void> setDarkMode(bool value) async {
+    await _prefs.setBool(_darkModeKey, value);
+    state = state.copyWith(isDarkMode: value);
   }
 
   Future<void> dismissInsight() async {

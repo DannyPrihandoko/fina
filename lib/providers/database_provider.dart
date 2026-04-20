@@ -114,13 +114,14 @@ class TransactionsNotifier extends StateNotifier<List<Transaction>> {
 
 // BILLS PROVIDER
 final billsProvider = StateNotifierProvider<BillsNotifier, List<Bill>>((ref) {
-  return BillsNotifier(ref.watch(databaseServiceProvider));
+  return BillsNotifier(ref.watch(databaseServiceProvider), ref);
 });
 
 class BillsNotifier extends StateNotifier<List<Bill>> {
   final DatabaseService _dbService;
+  final Ref _ref;
 
-  BillsNotifier(this._dbService) : super([]) {
+  BillsNotifier(this._dbService, this._ref) : super([]) {
     loadBills();
   }
 
@@ -128,9 +129,10 @@ class BillsNotifier extends StateNotifier<List<Bill>> {
     state = await _dbService.getAllBills();
   }
 
-  Future<void> addBill(Bill bill) async {
-    await _dbService.createBill(bill);
+  Future<int> addBill(Bill bill) async {
+    final id = await _dbService.createBill(bill);
     await loadBills();
+    return id;
   }
 
   Future<void> updateBill(Bill bill) async {
@@ -140,6 +142,23 @@ class BillsNotifier extends StateNotifier<List<Bill>> {
 
   Future<void> removeBill(int id) async {
     await _dbService.deleteBill(id);
+    await loadBills();
+  }
+
+  Future<void> payBill(Bill bill, int walletId) async {
+    final paidBill = bill.copyWith(isPaid: true);
+    await _dbService.updateBill(paidBill);
+
+    final transaction = Transaction(
+      title: 'Bayar: ${bill.title}',
+      amount: bill.amount,
+      type: TransactionType.expense,
+      category: bill.category,
+      date: DateTime.now(),
+      walletId: walletId,
+    );
+
+    await _ref.read(transactionsProvider.notifier).addTransaction(transaction);
     await loadBills();
   }
 }

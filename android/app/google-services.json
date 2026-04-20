@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "950683922466",
+    "project_id": "fina-finance-20d86",
+    "storage_bucket": "fina-finance-20d86.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:950683922466:android:7c1d711d6a801619cc5a7b",
+        "android_client_info": {
+          "package_name": "fina.finance"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC4VsGtWwUSW1YJxsrkdvT7jGkMFfA__FE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

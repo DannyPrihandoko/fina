@@ -10,6 +10,7 @@ import 'add_transaction_screen.dart';
 import 'settings_screen.dart';
 import 'transactions_screen.dart';
 import 'wallets_screen.dart';
+import 'bills_screen.dart';
 import '../models/bill.dart';
 import '../models/budget.dart';
 import '../providers/settings_provider.dart';
@@ -151,7 +152,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           'assets/icon/logo_apps.png',
           height: 28,
           filterQuality: FilterQuality.high,
-          color: Colors.white,
         ),
         centerTitle: false,
         actions: [
@@ -226,15 +226,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   const SizedBox(height: 32),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: _buildSectionHeader(
+                      context, 
+                      'Tagihan Mendatang', 
+                      () => Navigator.push(context, MaterialPageRoute(builder: (context) => BillsScreen()))
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Tagihan Mendatang', style: Theme.of(context).textTheme.titleMedium),
-                        const SizedBox(height: 16),
-                        if (bills.isEmpty)
+                        if (bills.where((b) => !b.isPaid).isEmpty)
                           _buildEmptyState(context, 'Tidak ada tagihan mendesak.')
                         else
-                          ...bills.take(3).map((bill) => _buildMinimalBillItem(bill, currencyFormat)),
+                          ...bills.where((b) => !b.isPaid).take(3).map((bill) => _buildMinimalBillItem(bill, currencyFormat)),
                       ],
                     ),
                   ),

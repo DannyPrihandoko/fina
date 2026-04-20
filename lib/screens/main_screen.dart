@@ -4,6 +4,7 @@ import 'dashboard_screen.dart';
 import 'bills_screen.dart';
 import 'ai_screen.dart';
 import 'stats_screen.dart';
+import 'connections_screen.dart';
 import '../theme/colors.dart';
 import '../providers/navigation_provider.dart';
 
@@ -14,6 +15,7 @@ class MainScreen extends ConsumerWidget {
     DashboardScreen(),
     StatsScreen(),
     BillsScreen(),
+    ConnectionsScreen(),
     AIScreen(),
   ];
 
@@ -63,6 +65,11 @@ class MainScreen extends ConsumerWidget {
               icon: Icon(Icons.receipt_long_outlined),
               activeIcon: Icon(Icons.receipt_long),
               label: 'TAGIHAN',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.people_outline_rounded),
+              activeIcon: Icon(Icons.people_rounded),
+              label: 'HUBUNGAN',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.auto_awesome_outlined),

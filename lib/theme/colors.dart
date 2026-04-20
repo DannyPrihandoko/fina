@@ -11,6 +11,13 @@ class AppColors {
   static const Color glassWhite = Color(0x1AFFFFFF);
   static const Color glassBorder = Color(0x33FFFFFF);
 
+  // Dark Mode Palette
+  static const Color darkBackground = Color(0xFF0A0E12); // Deep Obsidian
+  static const Color darkCard = Color(0xFF151D26); // Dark Navy Card
+  static const Color darkBorder = Color(0xFF242F3D); // Subtle Dark Border
+  static const Color darkTextPrimary = Color(0xFFFDFDFD); // Off-White Text
+  static const Color darkTextMuted = Color(0xFF8B9BA8); // Muted Blue-Grey
+
   // Semantic mappings
   static const Color primary = textDarkBlue;
   static const Color secondary = ctaAqua;

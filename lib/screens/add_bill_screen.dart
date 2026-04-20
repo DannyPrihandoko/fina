@@ -6,6 +6,7 @@ import '../providers/database_provider.dart';
 import '../services/notification_service.dart';
 import '../theme/colors.dart';
 import '../utils/currency_formatter.dart';
+import 'bills_screen.dart';
 
 class AddBillScreen extends ConsumerStatefulWidget {
   final Bill? existingBill;
@@ -80,8 +81,9 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
     }
   }
 
-  void _saveBill() async {
+  Future<void> _saveBill() async {
     if (_formKey.currentState!.validate()) {
+      final isEditing = widget.existingBill != null;
       final amount = CurrencyUtils.parse(_amountController.text).abs();
       
       final bill = Bill(
@@ -103,75 +105,17 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
           await NotificationService().cancelBillReminders(bill.id!);
         }
       } else {
-        await ref.read(billsProvider.notifier).addBill(bill);
-        // Find newly added bill to schedule reminders
-        final updatedBills = ref.read(billsProvider);
-        final savedBill = updatedBills.firstWhere((b) => b.title == bill.title && b.amount == bill.amount);
+        final id = await ref.read(billsProvider.notifier).addBill(bill);
         if (_reminderEnabled) {
+          final savedBill = bill.copyWith(id: id);
           await NotificationService().scheduleBillReminders(savedBill);
         }
       }
 
       if (mounted) {
-        _showSuccessDialog();
+        Navigator.pop(context, isEditing ? 'update' : 'add');
       }
     }
-  }
-
-  void _showSuccessDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        backgroundColor: Colors.white,
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.ctaAqua.withValues(alpha: 0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.check_circle_rounded, color: AppColors.ctaAqua, size: 48),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                widget.existingBill != null ? 'Perubahan Disimpan!' : 'Tagihan Ditambahkan!',
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textDarkBlue),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                widget.existingBill != null 
-                  ? 'Data tagihan Anda telah berhasil diperbarui.' 
-                  : 'Tagihan Anda telah berhasil dijadwalkan.',
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: AppColors.textMuted),
-              ),
-              const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context); // Close dialog
-                    Navigator.pop(context); // Back to list
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.textDarkBlue,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  ),
-                  child: const Text('OK', style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   @override

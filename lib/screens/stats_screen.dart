@@ -6,6 +6,7 @@ import '../providers/database_provider.dart';
 import '../models/transaction.dart';
 import '../models/budget.dart';
 import '../theme/colors.dart';
+import '../providers/navigation_provider.dart';
 
 class StatsScreen extends ConsumerStatefulWidget {
   const StatsScreen({super.key});
@@ -49,7 +50,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.textDarkBlue, size: 20),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => ref.read(navigationProvider.notifier).state = 0,
         ),
         title: const Text('Rekapitulasi', style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.textDarkBlue)),
         centerTitle: false,

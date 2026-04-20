@@ -36,15 +36,15 @@ class SettingsScreen extends ConsumerWidget {
     final notificationsEnabled = settings.isNotificationsEnabled;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.textDarkBlue, size: 20),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: Theme.of(context).appBarTheme.titleTextStyle?.color, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Pengaturan', style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.textDarkBlue)),
+        title: Text('Pengaturan', style: TextStyle(fontWeight: FontWeight.w900, color: Theme.of(context).appBarTheme.titleTextStyle?.color)),
         centerTitle: false,
       ),
       body: CustomScrollView(
@@ -56,7 +56,7 @@ class SettingsScreen extends ConsumerWidget {
               child: Column(
                 children: [
                   // Profile Header (Excluvise Look)
-                  _buildProfileHeader(),
+                  _buildProfileHeader(context),
                   const SizedBox(height: 32),
                 ],
               ),
@@ -71,49 +71,62 @@ class SettingsScreen extends ConsumerWidget {
                 children: [
                   _buildSectionLabel('NOTIFIKASI'),
                   const SizedBox(height: 16),
-                  _buildSettingsGroup([
-                    _buildSwitchItem(
-                      icon: Icons.notifications_active_rounded,
-                      iconColor: AppColors.ctaAqua,
-                      title: 'Aktifkan Notifikasi',
-                      subtitle: 'Terima pengingat tagihan harian',
-                      value: notificationsEnabled,
-                      onChanged: (value) => _toggleNotifications(ref, context, value),
-                    ),
-                    if (notificationsEnabled) ...[
-                      _buildSettingsItem(
-                        icon: Icons.send_rounded,
-                        iconColor: AppColors.primary,
-                        title: 'Tes Notifikasi',
-                        onTap: () => NotificationService().showTestNotification(),
+                  _buildSettingsGroup(
+                    context,
+                    [
+                      _buildSwitchItem(
+                        context,
+                        icon: Icons.notifications_active_rounded,
+                        iconColor: AppColors.ctaAqua,
+                        title: 'Aktifkan Notifikasi',
+                        subtitle: 'Terima pengingat tagihan harian',
+                        value: notificationsEnabled,
+                        onChanged: (value) => _toggleNotifications(ref, context, value),
                       ),
+                      if (notificationsEnabled) ...[
+                        _buildSettingsItem(
+                          context,
+                          icon: Icons.send_rounded,
+                          iconColor: AppColors.primary,
+                          title: 'Tes Notifikasi',
+                          onTap: () => NotificationService().showTestNotification(),
+                        ),
+                      ],
                     ],
-                  ]),
+                  ),
 
                   const SizedBox(height: 32),
 
                   _buildSectionLabel('UMUM'),
                   const SizedBox(height: 16),
-                  _buildSettingsGroup([
+                  _buildSettingsGroup(
+                    context,
+                    [
                     _buildSettingsItem(
+                      context,
                       icon: Icons.language_rounded,
                       iconColor: Colors.blue,
                       title: 'Bahasa',
                       trailingText: 'Indonesia',
                     ),
-                    _buildSettingsItem(
+                    _buildSwitchItem(
+                      context,
                       icon: Icons.dark_mode_rounded,
                       iconColor: Colors.deepPurple,
                       title: 'Mode Gelap',
-                      trailingText: 'Sistem',
+                      subtitle: 'Aktifkan tema gelap yang elegan',
+                      value: settings.isDarkMode,
+                      onChanged: (value) => ref.read(settingsProvider.notifier).setDarkMode(value),
                     ),
                     _buildSettingsItem(
+                      context,
                       icon: Icons.verified_user_rounded,
                       iconColor: Colors.teal,
                       title: 'Keamanan (Biometrik)',
                       trailingText: 'Nonaktif',
                     ),
                     _buildSettingsItem(
+                      context,
                       icon: Icons.info_rounded,
                       iconColor: Colors.orange,
                       title: 'Tentang Fina',
@@ -143,16 +156,17 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildProfileHeader() {
+  Widget _buildProfileHeader(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.cardPaleBlue,
+        color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: AppColors.borderColor.withOpacity(0.5)),
+        border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.borderColor.withOpacity(0.5)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.textDarkBlue.withValues(alpha: 0.05),
+            color: (isDark ? Colors.black : AppColors.textDarkBlue).withValues(alpha: 0.05),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -164,20 +178,20 @@ class SettingsScreen extends ConsumerWidget {
             width: 70,
             height: 70,
             decoration: BoxDecoration(
-              color: AppColors.white,
+              color: isDark ? AppColors.darkBackground : AppColors.white,
               shape: BoxShape.circle,
-              border: Border.all(color: AppColors.borderColor, width: 2),
+              border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.borderColor, width: 2),
             ),
-            child: const Icon(Icons.person_rounded, color: AppColors.textDarkBlue, size: 40),
+            child: Icon(Icons.person_rounded, color: Theme.of(context).textTheme.bodyLarge?.color, size: 40),
           ),
           const SizedBox(width: 20),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'User Fina',
-                  style: TextStyle(color: AppColors.textDarkBlue, fontSize: 22, fontWeight: FontWeight.w900),
+                  style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color, fontSize: 22, fontWeight: FontWeight.w900),
                 ),
                 const SizedBox(height: 4),
                 Container(
@@ -196,7 +210,7 @@ class SettingsScreen extends ConsumerWidget {
           ),
           IconButton(
             onPressed: () {},
-            icon: const Icon(Icons.edit_note_rounded, color: AppColors.textMuted, size: 28),
+            icon: Icon(Icons.edit_note_rounded, color: isDark ? AppColors.darkTextMuted : AppColors.textMuted, size: 28),
           ),
         ],
       ),
@@ -206,7 +220,7 @@ class SettingsScreen extends ConsumerWidget {
   Widget _buildSectionLabel(String label) {
     return Text(
       label,
-      style: const TextStyle(
+      style: TextStyle(
         color: AppColors.textMuted,
         fontSize: 10,
         fontWeight: FontWeight.w900,
@@ -215,14 +229,14 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSettingsGroup(List<Widget> items) {
+  Widget _buildSettingsGroup(BuildContext context, List<Widget> items) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: AppColors.borderColor.withOpacity(0.2),
+            color: (Theme.of(context).brightness == Brightness.dark ? Colors.black : AppColors.borderColor).withValues(alpha: 0.2),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -234,13 +248,15 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSettingsItem({
+  Widget _buildSettingsItem(
+    BuildContext context, {
     required IconData icon,
     required Color iconColor,
     required String title,
     String? trailingText,
     VoidCallback? onTap,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return ListTile(
       onTap: onTap,
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -252,20 +268,21 @@ class SettingsScreen extends ConsumerWidget {
         ),
         child: Icon(icon, color: iconColor, size: 22),
       ),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: AppColors.textDarkBlue)),
+      title: Text(title, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Theme.of(context).textTheme.bodyLarge?.color)),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (trailingText != null)
-            Text(trailingText, style: const TextStyle(color: AppColors.textMuted, fontSize: 13, fontWeight: FontWeight.w600)),
+            Text(trailingText, style: TextStyle(color: isDark ? AppColors.darkTextMuted : AppColors.textMuted, fontSize: 13, fontWeight: FontWeight.w600)),
           const SizedBox(width: 8),
-          const Icon(Icons.chevron_right_rounded, color: AppColors.borderColor, size: 20),
+          Icon(Icons.chevron_right_rounded, color: isDark ? AppColors.darkBorder : AppColors.borderColor, size: 20),
         ],
       ),
     );
   }
 
-  Widget _buildSwitchItem({
+  Widget _buildSwitchItem(
+    BuildContext context, {
     required IconData icon,
     required Color iconColor,
     required String title,
@@ -273,6 +290,7 @@ class SettingsScreen extends ConsumerWidget {
     required bool value,
     required Function(bool) onChanged,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       leading: Container(
@@ -283,8 +301,8 @@ class SettingsScreen extends ConsumerWidget {
         ),
         child: Icon(icon, color: iconColor, size: 22),
       ),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: AppColors.textDarkBlue)),
-      subtitle: Text(subtitle, style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+      title: Text(title, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Theme.of(context).textTheme.bodyLarge?.color)),
+      subtitle: Text(subtitle, style: TextStyle(fontSize: 11, color: isDark ? AppColors.darkTextMuted : AppColors.textMuted)),
       trailing: Switch.adaptive(
         value: value,
         activeColor: AppColors.ctaAqua,

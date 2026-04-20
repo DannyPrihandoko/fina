@@ -24,7 +24,7 @@ class DatabaseService {
 
     return await openDatabase(
       path,
-      version: 3,
+      version: 4,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -70,7 +70,8 @@ CREATE TABLE bills (
   dueDate $textType,
   category $textType,
   isRecurring $boolType,
-  reminderEnabled $boolType
+  reminderEnabled $boolType,
+  isPaid $boolType DEFAULT 0
 )
 ''');
 
@@ -115,6 +116,10 @@ CREATE TABLE budgets (
   limitAmount REAL NOT NULL
 )
 ''');
+    }
+
+    if (oldVersion < 4) {
+      await db.execute('ALTER TABLE bills ADD COLUMN isPaid INTEGER NOT NULL DEFAULT 0');
     }
   }
 
