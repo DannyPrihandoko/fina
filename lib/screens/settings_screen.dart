@@ -69,7 +69,7 @@ class SettingsScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildSectionLabel('NOTIFIKASI'),
+                  _buildSectionLabel(context, 'NOTIFIKASI'),
                   const SizedBox(height: 16),
                   _buildSettingsGroup(
                     context,
@@ -77,7 +77,7 @@ class SettingsScreen extends ConsumerWidget {
                       _buildSwitchItem(
                         context,
                         icon: Icons.notifications_active_rounded,
-                        iconColor: AppColors.ctaAqua,
+                        iconColor: Theme.of(context).colorScheme.secondary,
                         title: 'Aktifkan Notifikasi',
                         subtitle: 'Terima pengingat tagihan harian',
                         value: notificationsEnabled,
@@ -87,7 +87,7 @@ class SettingsScreen extends ConsumerWidget {
                         _buildSettingsItem(
                           context,
                           icon: Icons.send_rounded,
-                          iconColor: AppColors.primary,
+                          iconColor: Theme.of(context).colorScheme.primary,
                           title: 'Tes Notifikasi',
                           onTap: () => NotificationService().showTestNotification(),
                         ),
@@ -97,7 +97,7 @@ class SettingsScreen extends ConsumerWidget {
 
                   const SizedBox(height: 32),
 
-                  _buildSectionLabel('UMUM'),
+                  _buildSectionLabel(context, 'UMUM'),
                   const SizedBox(height: 16),
                   _buildSettingsGroup(
                     context,
@@ -139,7 +139,7 @@ class SettingsScreen extends ConsumerWidget {
                     child: Text(
                       'FINA APP • MADE WITH LOVE',
                       style: TextStyle(
-                        color: AppColors.textMuted.withOpacity(0.5),
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
                         fontSize: 10,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 2,
@@ -197,12 +197,12 @@ class SettingsScreen extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: AppColors.ctaAqua,
+                    color: Theme.of(context).colorScheme.secondary,
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: const Text(
+                  child: Text(
                     'FINA PREMIUM',
-                    style: TextStyle(color: AppColors.textDarkBlue, fontSize: 8, fontWeight: FontWeight.w900, letterSpacing: 1),
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSecondary, fontSize: 8, fontWeight: FontWeight.w900, letterSpacing: 1),
                   ),
                 ),
               ],
@@ -210,18 +210,18 @@ class SettingsScreen extends ConsumerWidget {
           ),
           IconButton(
             onPressed: () {},
-            icon: Icon(Icons.edit_note_rounded, color: isDark ? AppColors.darkTextMuted : AppColors.textMuted, size: 28),
+            icon: Icon(Icons.edit_note_rounded, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5), size: 28),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSectionLabel(String label) {
+  Widget _buildSectionLabel(BuildContext context, String label) {
     return Text(
       label,
       style: TextStyle(
-        color: AppColors.textMuted,
+        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
         fontSize: 10,
         fontWeight: FontWeight.w900,
         letterSpacing: 1.5,
@@ -236,7 +236,7 @@ class SettingsScreen extends ConsumerWidget {
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: (Theme.of(context).brightness == Brightness.dark ? Colors.black : AppColors.borderColor).withValues(alpha: 0.2),
+            color: Theme.of(context).dividerColor.withOpacity(0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -273,9 +273,9 @@ class SettingsScreen extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (trailingText != null)
-            Text(trailingText, style: TextStyle(color: isDark ? AppColors.darkTextMuted : AppColors.textMuted, fontSize: 13, fontWeight: FontWeight.w600)),
+            Text(trailingText, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4), fontSize: 13, fontWeight: FontWeight.w600)),
           const SizedBox(width: 8),
-          Icon(Icons.chevron_right_rounded, color: isDark ? AppColors.darkBorder : AppColors.borderColor, size: 20),
+          Icon(Icons.chevron_right_rounded, color: Theme.of(context).dividerColor, size: 20),
         ],
       ),
     );
@@ -301,11 +301,11 @@ class SettingsScreen extends ConsumerWidget {
         ),
         child: Icon(icon, color: iconColor, size: 22),
       ),
-      title: Text(title, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Theme.of(context).textTheme.bodyLarge?.color)),
-      subtitle: Text(subtitle, style: TextStyle(fontSize: 11, color: isDark ? AppColors.darkTextMuted : AppColors.textMuted)),
+      title: Text(title, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Theme.of(context).colorScheme.onSurface)),
+      subtitle: Text(subtitle, style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4))),
       trailing: Switch.adaptive(
         value: value,
-        activeColor: AppColors.ctaAqua,
+        activeColor: Theme.of(context).colorScheme.secondary,
         onChanged: onChanged,
       ),
     );

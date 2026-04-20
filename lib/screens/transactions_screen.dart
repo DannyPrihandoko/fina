@@ -65,15 +65,15 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
 
     return Scaffold(
       extendBodyBehindAppBar: true,
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.textDarkBlue, size: 20),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: Theme.of(context).colorScheme.onSurface, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Riwayat Transaksi', style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.textDarkBlue)),
+        title: Text('Riwayat Transaksi', style: TextStyle(fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onSurface)),
         centerTitle: false,
       ),
       body: CustomScrollView(
@@ -115,12 +115,12 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                 padding: const EdgeInsets.only(bottom: 16, top: 8),
                                 child: Row(
                                   children: [
-                                    const Icon(Icons.calendar_today_rounded, size: 12, color: AppColors.textMuted),
+                                    Icon(Icons.calendar_today_rounded, size: 12, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)),
                                     const SizedBox(width: 8),
                                     Text(
                                       _formatDateHeader(date),
-                                      style: const TextStyle(
-                                        color: AppColors.textMuted,
+                                      style: TextStyle(
+                                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
                                         fontWeight: FontWeight.w900,
                                         fontSize: 11,
                                         letterSpacing: 1,
@@ -132,11 +132,11 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                               Container(
                                 margin: const EdgeInsets.only(bottom: 24),
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
+                                  color: Theme.of(context).cardTheme.color,
                                   borderRadius: BorderRadius.circular(24),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: AppColors.borderColor.withOpacity(0.2),
+                                      color: Theme.of(context).dividerColor.withOpacity(0.15),
                                       blurRadius: 10,
                                       offset: const Offset(0, 4),
                                     ),
@@ -154,9 +154,9 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                     
                                     return Column(
                                       children: [
-                                        _buildTransactionItem(tx, w, toW, currencyFormat),
+                                        _buildTransactionItem(context, tx, w, toW, currencyFormat),
                                         if (i < txs.length - 1)
-                                          const Divider(height: 1, color: AppColors.borderColor, indent: 70, endIndent: 20),
+                                          Divider(height: 1, color: Theme.of(context).dividerColor, indent: 70, endIndent: 20),
                                       ],
                                     );
                                   }).toList(),
@@ -182,12 +182,12 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
         width: double.infinity,
         padding: const EdgeInsets.all(28),
         decoration: BoxDecoration(
-          color: AppColors.cardPaleBlue,
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(32),
-          border: Border.all(color: AppColors.borderColor.withOpacity(0.5)),
+          border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.5)),
           boxShadow: [
             BoxShadow(
-              color: AppColors.textDarkBlue.withValues(alpha: 0.05),
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.05),
               blurRadius: 20,
               offset: const Offset(0, 10),
             ),
@@ -197,8 +197,8 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
           children: [
             Text(
               'ARUS KAS ${DateFormat('MMMM yyyy').format(_selectedMonth).toUpperCase()}',
-              style: const TextStyle(
-                color: AppColors.textMuted,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                 fontSize: 10,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1.5,
@@ -207,22 +207,22 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
             const SizedBox(height: 12),
             Text(
               format.format(balance),
-              style: const TextStyle(color: AppColors.textDarkBlue, fontSize: 34, fontWeight: FontWeight.w900, letterSpacing: -0.5),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 34, fontWeight: FontWeight.w900, letterSpacing: -0.5),
             ),
             const SizedBox(height: 28),
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).cardTheme.color,
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: AppColors.borderColor.withOpacity(0.5)),
+                border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.5)),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _buildSimpleStat('MASUK', income, AppColors.ctaAqua),
-                  Container(width: 1, height: 30, color: AppColors.borderColor),
-                  _buildSimpleStat('KELUAR', expense, Colors.redAccent),
+                  _buildSimpleStat(context, 'MASUK', income, Theme.of(context).colorScheme.secondary),
+                  Container(width: 1, height: 30, color: Theme.of(context).dividerColor),
+                  _buildSimpleStat(context, 'KELUAR', expense, Colors.redAccent),
                 ],
               ),
             ),
@@ -232,11 +232,11 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     );
   }
 
-  Widget _buildSimpleStat(String label, double amount, Color color) {
+  Widget _buildSimpleStat(BuildContext context, String label, double amount, Color color) {
     final format = NumberFormat.compactCurrency(symbol: 'Rp', locale: 'id_ID');
     return Column(
       children: [
-        Text(label, style: const TextStyle(color: AppColors.textMuted, fontSize: 10, fontWeight: FontWeight.bold)),
+        Text(label, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5), fontSize: 10, fontWeight: FontWeight.bold)),
         const SizedBox(height: 6),
         Text(
           format.format(amount),
@@ -263,15 +263,15 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
               margin: const EdgeInsets.symmetric(horizontal: 6),
               padding: const EdgeInsets.symmetric(horizontal: 24),
               decoration: BoxDecoration(
-                color: isSelected ? AppColors.textDarkBlue : AppColors.cardPaleBlue.withOpacity(0.3),
+                color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: isSelected ? AppColors.textDarkBlue : AppColors.borderColor.withOpacity(0.5)),
+                border: Border.all(color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).dividerColor.withOpacity(0.5)),
               ),
               child: Center(
                 child: Text(
                   DateFormat('MMM yyyy').format(month),
                   style: TextStyle(
-                    color: isSelected ? Colors.white : AppColors.textDarkBlue,
+                    color: isSelected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurface,
                     fontWeight: FontWeight.w900,
                     fontSize: 12,
                     letterSpacing: 0.5,
@@ -285,7 +285,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     );
   }
 
-  Widget _buildTransactionItem(Transaction tx, Wallet wallet, Wallet? toWallet, NumberFormat format) {
+  Widget _buildTransactionItem(BuildContext context, Transaction tx, Wallet wallet, Wallet? toWallet, NumberFormat format) {
     final isIncome = tx.type == TransactionType.income || tx.type == TransactionType.initial;
     final isTransfer = tx.type == TransactionType.transfer;
     
@@ -297,17 +297,17 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: AppColors.cardPaleBlue.withOpacity(0.5), 
+              color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5), 
               borderRadius: BorderRadius.circular(16)
             ),
-            child: Icon(_getCategoryIcon(tx.category), size: 22, color: AppColors.textDarkBlue),
+            child: Icon(_getCategoryIcon(tx.category), size: 22, color: Theme.of(context).colorScheme.onSurface),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(tx.title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: AppColors.textDarkBlue)),
+                Text(tx.title, style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Theme.of(context).colorScheme.onSurface)),
                 const SizedBox(height: 4),
                 Wrap(
                   spacing: 4,
@@ -318,7 +318,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                       child: Text(wallet.name.toUpperCase(), style: TextStyle(color: wallet.color, fontSize: 8, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
                     ),
                     if (isTransfer && toWallet != null) ...[
-                      Icon(Icons.arrow_forward_rounded, size: 8, color: AppColors.textMuted.withOpacity(0.5)),
+                      Icon(Icons.arrow_forward_rounded, size: 8, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3)),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(color: toWallet.color.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
@@ -339,7 +339,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                 style: TextStyle(
                   fontWeight: FontWeight.w900,
                   fontSize: 14,
-                  color: isTransfer ? Colors.orange : (isIncome ? AppColors.ctaAqua : AppColors.textDarkBlue),
+                  color: isTransfer ? Colors.orange : (isIncome ? Theme.of(context).colorScheme.secondary : Theme.of(context).colorScheme.onSurface),
                 ),
               ),
               if (tx.adminFee > 0)
@@ -358,11 +358,11 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
         children: [
           Container(
             padding: const EdgeInsets.all(28),
-            decoration: BoxDecoration(color: AppColors.cardPaleBlue.withOpacity(0.3), shape: BoxShape.circle),
-            child: Icon(Icons.history_rounded, size: 48, color: AppColors.textMuted.withOpacity(0.2)),
+            decoration: BoxDecoration(color: Theme.of(context).colorScheme.secondary.withOpacity(0.1), shape: BoxShape.circle),
+            child: Icon(Icons.history_rounded, size: 48, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
           ),
           const SizedBox(height: 24),
-          const Text('Tidak ada transaksi di bulan ini', style: TextStyle(color: AppColors.textMuted, fontWeight: FontWeight.bold, fontSize: 13)),
+          Text('Tidak ada transaksi di bulan ini', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5), fontWeight: FontWeight.bold, fontSize: 13)),
         ],
       ),
     );

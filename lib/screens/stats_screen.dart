@@ -44,15 +44,15 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
 
     return Scaffold(
       extendBodyBehindAppBar: true,
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.textDarkBlue, size: 20),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: Theme.of(context).colorScheme.onSurface, size: 20),
           onPressed: () => ref.read(navigationProvider.notifier).state = 0,
         ),
-        title: const Text('Rekapitulasi', style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.textDarkBlue)),
+        title: Text('Rekapitulasi', style: TextStyle(fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onSurface)),
         centerTitle: false,
       ),
       body: CustomScrollView(
@@ -96,14 +96,14 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'Tren Arus Kas',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.textDarkBlue),
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onSurface),
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(color: AppColors.ctaAqua.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-                        child: const Text('LIVE', style: TextStyle(color: AppColors.ctaAqua, fontWeight: FontWeight.w900, fontSize: 10)),
+                        decoration: BoxDecoration(color: Theme.of(context).colorScheme.secondary.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                        child: Text('LIVE', style: TextStyle(color: Theme.of(context).colorScheme.secondary, fontWeight: FontWeight.w900, fontSize: 10)),
                       ),
                     ],
                   ),
@@ -121,12 +121,12 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Detail Pengeluaran',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.textDarkBlue),
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onSurface),
                       ),
                       const SizedBox(height: 4),
-                      const Text('Ketuk kategori untuk mengatur anggaran', style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                      Text('Ketuk kategori untuk mengatur anggaran', style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
                       const SizedBox(height: 24),
                       if (sortedCategories.isEmpty)
                         _buildEmptyState('Tidak ada data pengeluaran.')
@@ -179,12 +179,12 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
         width: double.infinity,
         padding: const EdgeInsets.all(28),
         decoration: BoxDecoration(
-          color: AppColors.cardPaleBlue,
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(32),
-          border: Border.all(color: AppColors.borderColor.withOpacity(0.5)),
+          border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.5)),
           boxShadow: [
             BoxShadow(
-              color: AppColors.textDarkBlue.withValues(alpha: 0.05),
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.05),
               blurRadius: 20,
               offset: const Offset(0, 10),
             ),
@@ -192,29 +192,29 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
         ),
         child: Column(
           children: [
-            const Text(
+            Text(
               'SELISIH KAS PERIODE INI',
-              style: TextStyle(color: AppColors.textMuted, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5),
             ),
             const SizedBox(height: 12),
             Text(
               format.format(net),
-              style: const TextStyle(color: AppColors.textDarkBlue, fontSize: 34, fontWeight: FontWeight.w900, letterSpacing: -0.5),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 34, fontWeight: FontWeight.w900, letterSpacing: -0.5),
             ),
             const SizedBox(height: 28),
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: AppColors.borderColor.withOpacity(0.5)),
+                border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.5)),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _buildSummaryItem('Pemasukan', income, AppColors.ctaAqua),
-                  Container(width: 1, height: 30, color: AppColors.borderColor),
-                  _buildSummaryItem('Pengeluaran', expense, Colors.redAccent),
+                  _buildSummaryItem(context, 'Pemasukan', income, Theme.of(context).colorScheme.secondary),
+                  Container(width: 1, height: 30, color: Theme.of(context).dividerColor),
+                  _buildSummaryItem(context, 'Pengeluaran', expense, Colors.redAccent),
                 ],
               ),
             ),
@@ -224,11 +224,11 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     );
   }
 
-  Widget _buildSummaryItem(String label, double amount, Color color) {
+  Widget _buildSummaryItem(BuildContext context, String label, double amount, Color color) {
     final format = NumberFormat.compactCurrency(symbol: 'Rp', locale: 'id_ID');
     return Column(
       children: [
-        Text(label, style: const TextStyle(color: AppColors.textMuted, fontSize: 10, fontWeight: FontWeight.bold)),
+        Text(label, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontSize: 10, fontWeight: FontWeight.bold)),
         const SizedBox(height: 6),
         Text(
           format.format(amount),
@@ -278,13 +278,13 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
         barRods: [
           BarChartRodData(
             toY: dailyIncome[index]!,
-            color: AppColors.ctaAqua,
+            color: Theme.of(context).colorScheme.secondary,
             width: days > 10 ? 4 : 10,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
           ),
           BarChartRodData(
             toY: dailyExpense[index]!,
-            color: AppColors.textMuted.withOpacity(0.2),
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
             width: days > 10 ? 4 : 10,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
           ),
@@ -301,11 +301,11 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
       height: 240,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: AppColors.borderColor.withOpacity(0.2),
+            color: Theme.of(context).dividerColor.withOpacity(0.2),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -328,7 +328,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                     padding: const EdgeInsets.only(top: 10),
                     child: Text(
                       DateFormat(days > 7 ? 'dd' : 'E').format(date),
-                      style: const TextStyle(color: AppColors.textMuted, fontSize: 10, fontWeight: FontWeight.w900),
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontSize: 10, fontWeight: FontWeight.w900),
                     ),
                   );
                 },
@@ -360,11 +360,11 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
         margin: const EdgeInsets.only(bottom: 20),
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(28),
           boxShadow: [
             BoxShadow(
-              color: AppColors.borderColor.withOpacity(0.2),
+              color: Theme.of(context).dividerColor.withOpacity(0.2),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -391,28 +391,28 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(category.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 10, color: AppColors.textMuted, letterSpacing: 1.2)),
+                      Text(category.toUpperCase(), style: TextStyle(fontWeight: FontWeight.w900, fontSize: 10, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), letterSpacing: 1.2)),
                       const SizedBox(height: 4),
                       if (hasBudget)
                         Row(
                           children: [
                             Text(
                               format.format(amount),
-                              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: isExceeded ? Colors.red : AppColors.textDarkBlue),
+                              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: isExceeded ? Colors.red : Theme.of(context).colorScheme.onSurface),
                             ),
                             Text(
                               ' / ${format.format(budgetLimit)}',
-                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textMuted),
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
                             ),
                           ],
                         )
                       else
-                        Text(format.format(amount), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: AppColors.textDarkBlue)),
+                        Text(format.format(amount), style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Theme.of(context).colorScheme.onSurface)),
                     ],
                   ),
                 ),
                 Icon(isExceeded ? Icons.warning_amber_rounded : Icons.chevron_right_rounded, 
-                     color: isExceeded ? Colors.red : AppColors.textMuted.withOpacity(0.5)),
+                     color: isExceeded ? Colors.red : Theme.of(context).colorScheme.onSurface.withOpacity(0.3)),
               ],
             ),
             const SizedBox(height: 20),
@@ -424,9 +424,9 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                     child: LinearProgressIndicator(
                       value: budgetUsage,
                       minHeight: 10,
-                      backgroundColor: AppColors.borderColor.withOpacity(0.2),
+                      backgroundColor: Theme.of(context).dividerColor.withOpacity(0.1),
                       valueColor: AlwaysStoppedAnimation<Color>(
-                        isExceeded ? Colors.red : (budgetUsage > 0.8 ? Colors.orange : AppColors.ctaAqua),
+                        isExceeded ? Colors.red : (budgetUsage > 0.8 ? Colors.orange : Theme.of(context).colorScheme.secondary),
                       ),
                     ),
                   ),
@@ -436,9 +436,9 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                     children: [
                       Text(
                         isExceeded ? 'Melebihi Anggaran' : 'Sisa Anggaran: ${format.format(budgetLimit - amount)}',
-                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: isExceeded ? Colors.red : AppColors.textMuted),
+                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: isExceeded ? Colors.red : Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
                       ),
-                      Text('${(budgetUsage * 100).toInt()}%', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: AppColors.textDarkBlue)),
+                      Text('${(budgetUsage * 100).toInt()}%', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onSurface)),
                     ],
                   ),
                 ],
@@ -449,7 +449,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                 child: LinearProgressIndicator(
                   value: percentageOfTotal,
                   minHeight: 6,
-                  backgroundColor: AppColors.borderColor.withOpacity(0.2),
+                  backgroundColor: Theme.of(context).dividerColor.withOpacity(0.1),
                   valueColor: AlwaysStoppedAnimation<Color>(_getCategoryColor(category).withOpacity(0.5)),
                 ),
               ),
@@ -465,7 +465,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-        title: Text('Atur Anggaran: $category', style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.textDarkBlue)),
+        title: Text('Atur Anggaran: $category', style: TextStyle(fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onSurface)),
         content: TextField(
           controller: controller,
           keyboardType: TextInputType.number,
@@ -498,13 +498,13 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.textDarkBlue : AppColors.cardPaleBlue.withOpacity(0.3),
+          color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.white : AppColors.textDarkBlue.withOpacity(0.7),
+            color: isSelected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
             fontWeight: FontWeight.bold,
             fontSize: 12,
           ),
@@ -538,7 +538,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
 
   Widget _buildEmptyState(String message) {
     return Center(
-      child: Padding(padding: const EdgeInsets.symmetric(vertical: 40), child: Text(message, style: const TextStyle(color: AppColors.textMuted))),
+      child: Padding(padding: const EdgeInsets.symmetric(vertical: 40), child: Text(message, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5)))),
     );
   }
 }

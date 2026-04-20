@@ -81,10 +81,10 @@ class _AIScreenState extends ConsumerState<AIScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Asisten Fina', style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.textDarkBlue)),
-        backgroundColor: AppColors.background,
+        title: Text('Asisten Fina', style: TextStyle(fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onSurface)),
+        backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
       ),
@@ -121,7 +121,7 @@ class _AIScreenState extends ConsumerState<AIScreen> {
         padding: const EdgeInsets.all(16),
         constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.85),
         decoration: BoxDecoration(
-          color: isAI ? Colors.white : AppColors.textDarkBlue,
+          color: isAI ? Theme.of(context).cardTheme.color : Theme.of(context).colorScheme.primary,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(20),
             topRight: const Radius.circular(20),
@@ -130,39 +130,39 @@ class _AIScreenState extends ConsumerState<AIScreen> {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
+              color: Colors.black.withOpacity(0.04),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
           ],
-          border: isAI ? Border.all(color: AppColors.borderColor.withValues(alpha: 0.5)) : null,
+          border: isAI ? Border.all(color: Theme.of(context).dividerColor.withOpacity(0.5)) : null,
         ),
         child: MarkdownBody(
           data: content,
           styleSheet: MarkdownStyleSheet(
             p: TextStyle(
-              color: isAI ? AppColors.textDarkBlue : Colors.white,
+              color: isAI ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onPrimary,
               fontSize: 14,
               height: 1.5,
             ),
-            h3: const TextStyle(
-              color: AppColors.textDarkBlue,
+            h3: TextStyle(
+              color: isAI ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onPrimary,
               fontSize: 18,
               fontWeight: FontWeight.bold,
               height: 2.0,
             ),
-            h4: const TextStyle(
-              color: AppColors.textDarkBlue,
+            h4: TextStyle(
+              color: isAI ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onPrimary,
               fontSize: 15,
               fontWeight: FontWeight.bold,
               height: 1.8,
             ),
             listBullet: TextStyle(
-              color: isAI ? AppColors.textDarkBlue : Colors.white,
+              color: isAI ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onPrimary,
             ),
             code: TextStyle(
-              backgroundColor: AppColors.cardPaleBlue,
-              color: AppColors.textDarkBlue,
+              backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+              color: Theme.of(context).colorScheme.onSurface,
               fontSize: 13,
               fontFamily: 'monospace',
             ),
@@ -179,9 +179,9 @@ class _AIScreenState extends ConsumerState<AIScreen> {
         margin: const EdgeInsets.only(bottom: 20, left: 4),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardTheme.color,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.borderColor.withValues(alpha: 0.5)),
+          border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.5)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -196,8 +196,8 @@ class _AIScreenState extends ConsumerState<AIScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 2),
       width: 6,
       height: 6,
-      decoration: const BoxDecoration(
-        color: AppColors.ctaAqua,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.secondary,
         shape: BoxShape.circle,
       ),
     );
@@ -216,8 +216,8 @@ class _AIScreenState extends ConsumerState<AIScreen> {
             padding: const EdgeInsets.only(right: 8),
             child: ActionChip(
               label: Text(_quickActions[index]),
-              labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textDarkBlue),
-              backgroundColor: AppColors.ctaAqua.withValues(alpha: 0.15),
+              labelStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
+              backgroundColor: Theme.of(context).colorScheme.secondary.withOpacity(0.15),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide.none),
               onPressed: () => _sendMessage(_quickActions[index]),
             ),
@@ -230,9 +230,9 @@ class _AIScreenState extends ConsumerState<AIScreen> {
   Widget _buildInputSection() {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 10, 20, 34),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: AppColors.borderColor, width: 0.5)),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardTheme.color,
+        border: Border(top: BorderSide(color: Theme.of(context).dividerColor, width: 0.5)),
       ),
       child: Row(
         children: [
@@ -242,9 +242,9 @@ class _AIScreenState extends ConsumerState<AIScreen> {
               style: const TextStyle(fontSize: 14),
               decoration: InputDecoration(
                 hintText: 'Tanya asisten fina...',
-                hintStyle: const TextStyle(color: AppColors.textMuted),
+                hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)),
                 filled: true,
-                fillColor: AppColors.cardPaleBlue.withValues(alpha: 0.4),
+                fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.4),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(24),
                   borderSide: BorderSide.none,
@@ -260,11 +260,11 @@ class _AIScreenState extends ConsumerState<AIScreen> {
             child: Container(
               height: 44,
               width: 44,
-              decoration: const BoxDecoration(
-                color: AppColors.textDarkBlue,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.arrow_upward_rounded, color: Colors.white, size: 24),
+              child: Icon(Icons.arrow_upward_rounded, color: Theme.of(context).colorScheme.onPrimary, size: 24),
             ),
           ),
         ],

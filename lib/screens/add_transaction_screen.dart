@@ -103,9 +103,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
       Navigator.pop(context);
       
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Transaksi berhasil disimpan!'),
-          backgroundColor: AppColors.ctaAqua,
+        SnackBar(
+          content: const Text('Transaksi berhasil disimpan!'),
+          backgroundColor: Theme.of(context).colorScheme.secondary,
         ),
       );
     }
@@ -117,9 +117,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tambah Transaksi', style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.textDarkBlue)),
+        title: Text('Tambah Transaksi', style: TextStyle(fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onSurface)),
         leading: IconButton(
-          icon: const Icon(Icons.close_rounded, color: AppColors.textDarkBlue, size: 24),
+          icon: Icon(Icons.close_rounded, color: Theme.of(context).colorScheme.onSurface, size: 24),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -135,18 +135,18 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   margin: const EdgeInsets.only(bottom: 24),
                   decoration: BoxDecoration(
-                    color: AppColors.ctaAqua.withOpacity(0.1),
+                    color: Theme.of(context).colorScheme.secondary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.ctaAqua.withOpacity(0.3)),
+                    border: Border.all(color: Theme.of(context).colorScheme.secondary.withOpacity(0.3)),
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
-                      Icon(Icons.auto_awesome_rounded, color: AppColors.ctaAqua, size: 20),
-                      SizedBox(width: 12),
+                      Icon(Icons.auto_awesome_rounded, color: Theme.of(context).colorScheme.secondary, size: 20),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           'Data berhasil diisi otomatis melalui AI Scan.',
-                          style: TextStyle(color: AppColors.textDarkBlue, fontSize: 13, fontWeight: FontWeight.bold),
+                          style: TextStyle(color: Theme.of(context).colorScheme.secondary, fontSize: 13, fontWeight: FontWeight.bold),
                         ),
                       ),
                     ],
@@ -157,7 +157,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: AppColors.cardPaleBlue,
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
@@ -191,11 +191,12 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                 controller: _amountController,
                 keyboardType: TextInputType.number,
                 inputFormatters: [ThousandSeparatorFormatter()],
-                style: const TextStyle(fontSize: 40, fontWeight: FontWeight.w800, color: AppColors.textDarkBlue),
-                decoration: const InputDecoration(
+                style: TextStyle(fontSize: 40, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.onSurface),
+                decoration: InputDecoration(
                   prefixText: 'Rp ',
-                  prefixStyle: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textDarkBlue),
+                  prefixStyle: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
                   hintText: '0',
+                  hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3)),
                   border: InputBorder.none,
                 ),
                 validator: (value) {
@@ -225,9 +226,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                 decoration: InputDecoration(
                   hintText: _type == TransactionType.transfer ? 'Misal: Tarik Tunai' : 'Misal: Makan Siang',
                   filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.borderColor)),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.borderColor)),
+                  fillColor: Theme.of(context).cardTheme.color,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Theme.of(context).dividerColor)),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Theme.of(context).dividerColor)),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) return 'Masukkan keterangan';
@@ -249,10 +250,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                       label: Text(cat),
                       selected: isSelected,
                       onSelected: (selected) => selected ? setState(() => _category = cat) : null,
-                      selectedColor: AppColors.ctaAqua,
-                      backgroundColor: Colors.white,
-                      labelStyle: TextStyle(color: isSelected ? AppColors.textDarkBlue : AppColors.textMuted, fontWeight: FontWeight.bold, fontSize: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide(color: isSelected ? AppColors.ctaAqua : AppColors.borderColor)),
+                      selectedColor: Theme.of(context).colorScheme.secondary,
+                      backgroundColor: Theme.of(context).cardTheme.color,
+                      labelStyle: TextStyle(color: isSelected ? Theme.of(context).colorScheme.onSecondary : Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontWeight: FontWeight.bold, fontSize: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide(color: isSelected ? Theme.of(context).colorScheme.secondary : Theme.of(context).dividerColor)),
                       showCheckmark: false,
                     );
                   }).toList(),
@@ -287,9 +288,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderColor),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<int>(
@@ -302,7 +303,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
               children: [
                 Icon(Wallet.getIcon(w.type), size: 18, color: w.color),
                 const SizedBox(width: 12),
-                Text(w.name, style: const TextStyle(fontWeight: FontWeight.w500)),
+                Text(w.name, style: TextStyle(fontWeight: FontWeight.w500, color: Theme.of(context).colorScheme.onSurface)),
               ],
             ),
           )).toList(),
@@ -319,13 +320,13 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.textDarkBlue : Colors.transparent,
+          color: isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Center(
           child: Text(
             label,
-            style: TextStyle(color: isSelected ? Colors.white : AppColors.textMuted, fontWeight: FontWeight.w800, fontSize: 9),
+            style: TextStyle(color: isSelected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurface.withOpacity(0.5), fontWeight: FontWeight.w800, fontSize: 9),
           ),
         ),
       ),

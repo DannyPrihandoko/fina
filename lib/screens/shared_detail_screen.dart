@@ -27,7 +27,7 @@ class SharedDetailScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text(connection.name, style: const TextStyle(fontWeight: FontWeight.w900)),
+        title: Text(connection.name, style: TextStyle(fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onSurface)),
         centerTitle: true,
         actions: [
           IconButton(
@@ -43,24 +43,24 @@ class SharedDetailScreen extends ConsumerWidget {
           children: [
             _buildBalanceCard(context, recap),
             const SizedBox(height: 32),
-            _buildSectionLabel('REKAP BULAN INI'),
+            _buildSectionLabel(context, 'REKAP BULAN INI'),
             const SizedBox(height: 16),
             Row(
               children: [
-                Expanded(child: _buildStatCard(context, 'Pemasukan', recap['totalIncomeMonth'], AppColors.ctaAqua, Icons.arrow_upward_rounded)),
+                Expanded(child: _buildStatCard(context, 'Pemasukan', recap['totalIncomeMonth'], Theme.of(context).colorScheme.secondary, Icons.arrow_upward_rounded)),
                 const SizedBox(width: 16),
                 Expanded(child: _buildStatCard(context, 'Pengeluaran', recap['totalExpenseMonth'], AppColors.error, Icons.arrow_downward_rounded)),
               ],
             ),
             const SizedBox(height: 32),
-            _buildSectionLabel('DAFTAR DOMPET'),
+            _buildSectionLabel(context, 'DAFTAR DOMPET'),
             const SizedBox(height: 16),
             ...wallets.map((w) => _buildWalletItem(context, w, isDark)),
             const SizedBox(height: 48),
             Center(
               child: Text(
                 'DATA INI ADALAH SALINAN TERAKHIR YANG DIPUBLIKASIKAN',
-                style: TextStyle(color: AppColors.textMuted.withOpacity(0.5), fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 1),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3), fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 1),
               ),
             ),
           ],
@@ -93,8 +93,8 @@ class SharedDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSectionLabel(String label) {
-    return Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: AppColors.textMuted, letterSpacing: 1.5));
+  Widget _buildSectionLabel(BuildContext context, String label) {
+    return Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5), letterSpacing: 1.5));
   }
 
   Widget _buildStatCard(BuildContext context, String label, dynamic amount, Color color, IconData icon) {
@@ -103,14 +103,14 @@ class SharedDetailScreen extends ConsumerWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.borderColor.withOpacity(0.5)),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, color: color, size: 20),
           const SizedBox(height: 12),
-          Text(label, style: const TextStyle(color: AppColors.textMuted, fontSize: 10, fontWeight: FontWeight.bold)),
+          Text(label, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontSize: 10, fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),
           Text(
             NumberFormat.currency(locale: 'id', symbol: 'Rp', decimalDigits: 0).format(amount ?? 0),
@@ -128,7 +128,7 @@ class SharedDetailScreen extends ConsumerWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.borderColor),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Row(
         children: [
@@ -142,14 +142,14 @@ class SharedDetailScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(wallet['name'] ?? 'Dompet', style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color)),
-                Text(wallet['type'] ?? 'Cash', style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
+                Text(wallet['name'] ?? 'Dompet', style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface)),
+                Text(wallet['type'] ?? 'Cash', style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
               ],
             ),
           ),
           Text(
             NumberFormat.currency(locale: 'id', symbol: 'Rp', decimalDigits: 0).format(wallet['balance'] ?? 0),
-            style: TextStyle(fontWeight: FontWeight.w900, color: Theme.of(context).textTheme.bodyLarge?.color),
+            style: TextStyle(fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onSurface),
           ),
         ],
       ),

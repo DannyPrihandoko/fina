@@ -39,14 +39,14 @@ class MainScreen extends ConsumerWidget {
         }),
       ),
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          border: Border(top: BorderSide(color: AppColors.borderColor)),
+        decoration: BoxDecoration(
+          border: Border(top: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.1))),
         ),
         child: BottomNavigationBar(
           currentIndex: selectedIndex,
           onTap: (index) => ref.read(navigationProvider.notifier).state = index,
-          selectedItemColor: AppColors.textDarkBlue,
-          unselectedItemColor: AppColors.textMuted,
+          selectedItemColor: Theme.of(context).colorScheme.primary,
+          unselectedItemColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
           selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 10),
           unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 10),
           type: BottomNavigationBarType.fixed,

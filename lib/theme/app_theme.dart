@@ -6,17 +6,27 @@ class AppTheme {
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
+      brightness: Brightness.light,
       colorScheme: const ColorScheme.light(
         surface: AppColors.background,
-        primary: AppColors.primary,
+        primary: AppColors.textDarkBlue,
         onPrimary: AppColors.white,
-        secondary: AppColors.secondary,
+        secondary: AppColors.ctaAqua,
+        onSecondary: AppColors.textDarkBlue,
         error: AppColors.error,
+        onSurface: AppColors.textDarkBlue,
+        surfaceContainerHighest: AppColors.cardPaleBlue,
       ),
       scaffoldBackgroundColor: AppColors.background,
+      dividerTheme: const DividerThemeData(
+        color: AppColors.borderColor,
+        thickness: 1,
+        space: 1,
+      ),
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        centerTitle: false,
         iconTheme: IconThemeData(color: AppColors.textDarkBlue),
         titleTextStyle: TextStyle(
           color: AppColors.textDarkBlue,
@@ -55,8 +65,9 @@ class AppTheme {
       cardTheme: CardThemeData(
         color: AppColors.white,
         elevation: 0,
+        margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(24),
           side: const BorderSide(color: AppColors.borderColor),
         ),
       ),
@@ -65,12 +76,14 @@ class AppTheme {
           backgroundColor: AppColors.ctaAqua,
           foregroundColor: AppColors.textDarkBlue,
           elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(16),
           ),
           textStyle: GoogleFonts.plusJakartaSans(
             fontWeight: FontWeight.w800,
-            fontSize: 12,
+            fontSize: 14,
+            letterSpacing: 0.5,
           ),
         ),
       ),
@@ -92,12 +105,21 @@ class AppTheme {
         primary: AppColors.ctaAqua,
         onPrimary: AppColors.textDarkBlue,
         secondary: AppColors.ctaAqua,
+        onSecondary: AppColors.textDarkBlue,
         error: AppColors.error,
+        onSurface: AppColors.darkTextPrimary,
+        surfaceContainerHighest: AppColors.darkCard,
       ),
       scaffoldBackgroundColor: AppColors.darkBackground,
+      dividerTheme: const DividerThemeData(
+        color: AppColors.darkBorder,
+        thickness: 1,
+        space: 1,
+      ),
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        centerTitle: false,
         iconTheme: IconThemeData(color: AppColors.darkTextPrimary),
         titleTextStyle: TextStyle(
           color: AppColors.darkTextPrimary,
@@ -136,8 +158,9 @@ class AppTheme {
       cardTheme: CardThemeData(
         color: AppColors.darkCard,
         elevation: 0,
+        margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(24),
           side: const BorderSide(color: AppColors.darkBorder),
         ),
       ),
@@ -146,12 +169,14 @@ class AppTheme {
           backgroundColor: AppColors.ctaAqua,
           foregroundColor: AppColors.textDarkBlue,
           elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(16),
           ),
           textStyle: GoogleFonts.plusJakartaSans(
             fontWeight: FontWeight.w800,
-            fontSize: 12,
+            fontSize: 14,
+            letterSpacing: 0.5,
           ),
         ),
       ),

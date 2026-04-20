@@ -77,7 +77,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           children: [
             const Text('SCAN STRUK BELANJA', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, letterSpacing: 1)),
             const SizedBox(height: 8),
-            const Text('AI akan otomatis mendeteksi nominal & kategori', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+            Text('AI akan otomatis mendeteksi nominal & kategori', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontSize: 13)),
             const SizedBox(height: 32),
             Row(
               children: [
@@ -118,15 +118,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 24),
         decoration: BoxDecoration(
-          color: AppColors.cardPaleBlue,
+          color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: AppColors.borderColor),
+          border: Border.all(color: Theme.of(context).dividerColor),
         ),
         child: Column(
           children: [
-            Icon(icon, color: AppColors.textDarkBlue, size: 32),
+            Icon(icon, color: Theme.of(context).colorScheme.primary, size: 32),
             const SizedBox(height: 12),
-            Text(label, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1, color: AppColors.textDarkBlue)),
+            Text(label, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1, color: Theme.of(context).colorScheme.primary)),
           ],
         ),
       ),
@@ -156,12 +156,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         centerTitle: false,
         actions: [
           IconButton(
-            icon: const Icon(Icons.document_scanner_rounded, color: AppColors.textDarkBlue),
+            icon: Icon(Icons.document_scanner_rounded, color: Theme.of(context).colorScheme.onSurface),
             onPressed: _showScanOptions,
             tooltip: 'Scan Struk',
           ),
           IconButton(
-            icon: const Icon(Icons.notifications_none_rounded, color: AppColors.textDarkBlue),
+            icon: Icon(Icons.notifications_none_rounded, color: Theme.of(context).colorScheme.onSurface),
             onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen())),
           ),
           const SizedBox(width: 16),
@@ -229,7 +229,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     child: _buildSectionHeader(
                       context, 
                       'Tagihan Mendatang', 
-                      () => Navigator.push(context, MaterialPageRoute(builder: (context) => BillsScreen()))
+                      () => ref.read(navigationProvider.notifier).state = 2
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -262,12 +262,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         width: double.infinity,
         padding: const EdgeInsets.all(28),
         decoration: BoxDecoration(
-          color: AppColors.cardPaleBlue,
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(32),
-          border: Border.all(color: AppColors.borderColor.withOpacity(0.5)),
+          border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.5)),
           boxShadow: [
             BoxShadow(
-              color: AppColors.textDarkBlue.withOpacity(0.05),
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.05),
               blurRadius: 20,
               offset: const Offset(0, 10),
             ),
@@ -278,18 +278,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           children: [
             Row(
               children: [
-                Icon(Icons.account_balance_wallet_rounded, color: AppColors.ctaAqua, size: 16),
+                Icon(Icons.account_balance_wallet_rounded, color: Theme.of(context).colorScheme.secondary, size: 16),
                 const SizedBox(width: 8),
-                const Text(
+                Text(
                   'TOTAL KEKAYAAN BERSIH',
-                  style: TextStyle(color: AppColors.textMuted, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5),
                 ),
               ],
             ),
             const SizedBox(height: 12),
             Text(
               format.format(netWorth),
-              style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w900, color: AppColors.textDarkBlue, letterSpacing: -0.5),
+              style: TextStyle(fontSize: 34, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onSurface, letterSpacing: -0.5),
             ),
           ],
         ),
@@ -430,17 +430,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 margin: const EdgeInsets.symmetric(horizontal: 8),
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).cardTheme.color,
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.borderColor.withOpacity(0.3),
+                      color: Theme.of(context).dividerColor.withOpacity(0.3),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
                   ],
                   border: Border.all(
-                    color: isExceeded ? Colors.red.withOpacity(0.2) : AppColors.borderColor.withOpacity(0.5),
+                    color: isExceeded ? Colors.red.withOpacity(0.2) : Theme.of(context).dividerColor,
                   ),
                 ),
                 child: Column(
@@ -452,11 +452,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       children: [
                         Text(
                           budget.category,
-                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: AppColors.textDarkBlue),
+                          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Theme.of(context).colorScheme.onSurface),
                         ),
                         Icon(
                           isExceeded ? Icons.warning_amber_rounded : Icons.check_circle_outline_rounded, 
-                          color: isExceeded ? Colors.red : AppColors.ctaAqua, 
+                          color: isExceeded ? Colors.red : Theme.of(context).colorScheme.secondary, 
                           size: 16
                         ),
                       ],
@@ -487,7 +487,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         ),
                         Text(
                           '${(percent * 100).toInt()}%',
-                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: AppColors.textDarkBlue.withOpacity(0.5)),
+                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5)),
                         ),
                       ],
                     ),
@@ -515,11 +515,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.borderColor.withOpacity(0.2),
+            color: Theme.of(context).dividerColor.withOpacity(0.2),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -544,9 +544,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.borderColor.withOpacity(0.5)),
+        border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.5)),
       ),
       child: Row(
         children: [
@@ -582,19 +582,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         width: 48,
         height: 48,
         decoration: BoxDecoration(
-          color: AppColors.cardPaleBlue.withOpacity(0.5), 
+          color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5), 
           borderRadius: BorderRadius.circular(16)
         ),
-        child: Icon(_getCategoryIcon(tx.category), color: AppColors.textDarkBlue, size: 22),
+        child: Icon(_getCategoryIcon(tx.category), color: Theme.of(context).colorScheme.onSurface, size: 22),
       ),
-      title: Text(tx.title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: AppColors.textDarkBlue)),
-      subtitle: Text('${tx.category} • ${DateFormat('dd MMM').format(tx.date)}', style: const TextStyle(color: AppColors.textMuted, fontSize: 11, fontWeight: FontWeight.w500)),
+      title: Text(tx.title, style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Theme.of(context).colorScheme.onSurface)),
+      subtitle: Text('${tx.category} • ${DateFormat('dd MMM').format(tx.date)}', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontSize: 11, fontWeight: FontWeight.w500)),
       trailing: Text(
         '${isIncome ? '+' : '-'}${format.format(tx.amount)}',
         style: TextStyle(
           fontWeight: FontWeight.w900,
           fontSize: 14,
-          color: isTransfer ? Colors.orange : (isIncome ? AppColors.ctaAqua : AppColors.textDarkBlue),
+          color: isTransfer ? Colors.orange : (isIncome ? Theme.of(context).colorScheme.secondary : Theme.of(context).colorScheme.onSurface),
         ),
       ),
     );

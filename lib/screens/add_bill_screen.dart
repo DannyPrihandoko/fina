@@ -66,10 +66,9 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.textDarkBlue,
-              onPrimary: Colors.white,
-              onSurface: AppColors.textDarkBlue,
+            colorScheme: Theme.of(context).colorScheme.copyWith(
+              primary: Theme.of(context).colorScheme.primary,
+              onSurface: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           child: child!,
@@ -123,15 +122,15 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
     final isEditing = widget.existingBill != null;
     return Scaffold(
       extendBodyBehindAppBar: true,
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close_rounded, color: AppColors.textDarkBlue, size: 24),
+          icon: Icon(Icons.close_rounded, color: Theme.of(context).colorScheme.onSurface, size: 24),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(isEditing ? 'Edit Tagihan' : 'Tambah Tagihan', style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.textDarkBlue)),
+        title: Text(isEditing ? 'Edit Tagihan' : 'Tambah Tagihan', style: TextStyle(fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onSurface)),
         centerTitle: false,
       ),
       body: SingleChildScrollView(
@@ -148,23 +147,24 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Amount Selection Area
-                    _buildSectionLabel('NOMINAL TAGIHAN'),
+                    _buildSectionLabel(context, 'NOMINAL TAGIHAN'),
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _amountController,
                       keyboardType: TextInputType.number,
                       inputFormatters: [ThousandSeparatorFormatter()],
-                      style: const TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: AppColors.textDarkBlue),
+                      style: TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onSurface),
                       decoration: InputDecoration(
                         prefixText: 'Rp ',
-                        prefixStyle: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppColors.textDarkBlue),
+                        prefixStyle: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onSurface),
                         hintText: '0',
+                        hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3)),
                         filled: true,
-                        fillColor: Colors.white,
+                        fillColor: Theme.of(context).cardTheme.color,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none),
-                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: const BorderSide(color: AppColors.borderColor)),
-                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: const BorderSide(color: AppColors.ctaAqua, width: 2)),
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide(color: Theme.of(context).dividerColor)),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide(color: Theme.of(context).colorScheme.secondary, width: 2)),
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) return 'Masukkan jumlah';
@@ -176,11 +176,11 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
                     const SizedBox(height: 32),
 
                     // Title Input
-                    _buildSectionLabel('NAMA TAGIHAN'),
+                    _buildSectionLabel(context, 'NAMA TAGIHAN'),
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _titleController,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                      style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
                       decoration: _buildInputDecoration(
                         hint: 'Misal: Listrik PLN',
                         icon: Icons.receipt_rounded,
@@ -194,7 +194,7 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
                     const SizedBox(height: 32),
 
                     // Date Picker
-                    _buildSectionLabel('JATUH TEMPO'),
+                    _buildSectionLabel(context, 'JATUH TEMPO'),
                     const SizedBox(height: 12),
                     InkWell(
                       onTap: () => _selectDate(context),
@@ -202,17 +202,17 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: Theme.of(context).cardTheme.color,
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: AppColors.borderColor),
+                          border: Border.all(color: Theme.of(context).dividerColor),
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.calendar_today_rounded, color: AppColors.ctaAqua, size: 20),
+                            Icon(Icons.calendar_today_rounded, color: Theme.of(context).colorScheme.secondary, size: 20),
                             const SizedBox(width: 16),
                             Text(
                               DateFormat('EEEE, dd MMMM yyyy').format(_selectedDate),
-                              style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.textDarkBlue, fontSize: 14),
+                              style: TextStyle(fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onSurface, fontSize: 14),
                             ),
                           ],
                         ),
@@ -222,7 +222,7 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
                     const SizedBox(height: 32),
 
                     // Category Toggle
-                    _buildSectionLabel('KATEGORI'),
+                    _buildSectionLabel(context, 'KATEGORI'),
                     const SizedBox(height: 12),
                     Wrap(
                       spacing: 10,
@@ -235,15 +235,15 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
                             duration: const Duration(milliseconds: 200),
                             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                             decoration: BoxDecoration(
-                              color: isSelected ? AppColors.textDarkBlue : Colors.white,
+                              color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).cardTheme.color,
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: isSelected ? AppColors.textDarkBlue : AppColors.borderColor),
-                              boxShadow: isSelected ? [BoxShadow(color: AppColors.textDarkBlue.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))] : null,
+                              border: Border.all(color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).dividerColor),
+                              boxShadow: isSelected ? [BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))] : null,
                             ),
                             child: Text(
                               cat,
                               style: TextStyle(
-                                color: isSelected ? Colors.white : AppColors.textMuted,
+                                color: isSelected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                                 fontWeight: FontWeight.w900,
                                 fontSize: 12,
                                 letterSpacing: 0.5,
@@ -260,30 +260,30 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
                     Container(
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: AppColors.cardPaleBlue.withOpacity(0.3),
+                        color: Theme.of(context).colorScheme.secondary.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(24),
                       ),
                       child: Row(
                         children: [
                           Container(
                             padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
-                            child: const Icon(Icons.notifications_active_rounded, color: AppColors.ctaAqua, size: 24),
+                            decoration: BoxDecoration(color: Theme.of(context).cardTheme.color, borderRadius: BorderRadius.circular(14)),
+                            child: Icon(Icons.notifications_active_rounded, color: Theme.of(context).colorScheme.secondary, size: 24),
                           ),
                           const SizedBox(width: 16),
-                          const Expanded(
+                          Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('Notifikasi Aktif', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: AppColors.textDarkBlue)),
-                                Text('Ingatkan H-1 & Jatuh Tempo', style: TextStyle(fontSize: 11, color: AppColors.textMuted, fontWeight: FontWeight.bold)),
+                                Text('Notifikasi Aktif', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Theme.of(context).colorScheme.onSurface)),
+                                Text('Ingatkan H-1 & Jatuh Tempo', style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5), fontWeight: FontWeight.bold)),
                               ],
                             ),
                           ),
                           Switch.adaptive(
                             value: _reminderEnabled,
-                            activeColor: AppColors.ctaAqua,
-                            activeTrackColor: AppColors.ctaAqua.withOpacity(0.2),
+                            activeColor: Theme.of(context).colorScheme.secondary,
+                            activeTrackColor: Theme.of(context).colorScheme.secondary.withOpacity(0.2),
                             onChanged: (v) => setState(() => _reminderEnabled = v),
                           ),
                         ],
@@ -299,11 +299,11 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
                       child: ElevatedButton(
                         onPressed: _saveBill,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.textDarkBlue,
-                          foregroundColor: Colors.white,
+                          backgroundColor: Theme.of(context).colorScheme.primary,
+                          foregroundColor: Theme.of(context).colorScheme.onPrimary,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                           elevation: 10,
-                          shadowColor: AppColors.primary.withOpacity(0.3),
+                          shadowColor: Theme.of(context).colorScheme.primary.withOpacity(0.3),
                         ),
                         child: Text(
                           isEditing ? 'SIMPAN PERUBAHAN' : 'JADWALKAN TAGIHAN', 
@@ -322,11 +322,11 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
     );
   }
 
-  Widget _buildSectionLabel(String label) {
+  Widget _buildSectionLabel(BuildContext context, String label) {
     return Text(
       label,
-      style: const TextStyle(
-        color: AppColors.textMuted,
+      style: TextStyle(
+        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
         fontSize: 10,
         fontWeight: FontWeight.w900,
         letterSpacing: 1.5,
@@ -337,13 +337,14 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
   InputDecoration _buildInputDecoration({required String hint, required IconData icon}) {
     return InputDecoration(
       hintText: hint,
+      hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3)),
       filled: true,
-      fillColor: Colors.white,
-      prefixIcon: Icon(icon, color: AppColors.ctaAqua, size: 20),
+      fillColor: Theme.of(context).cardTheme.color,
+      prefixIcon: Icon(icon, color: Theme.of(context).colorScheme.secondary, size: 20),
       contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none),
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: const BorderSide(color: AppColors.borderColor)),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: const BorderSide(color: AppColors.ctaAqua, width: 2)),
+      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide(color: Theme.of(context).dividerColor)),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide(color: Theme.of(context).colorScheme.secondary, width: 2)),
     );
   }
 }

@@ -73,12 +73,12 @@ class _ShareDataScreenState extends ConsumerState<ShareDataScreen> with SingleTi
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Bagi Data Keuangan', style: TextStyle(fontWeight: FontWeight.w900)),
+        title: Text('Bagi Data Keuangan', style: TextStyle(fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onSurface)),
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: AppColors.ctaAqua,
-          labelColor: AppColors.textDarkBlue,
-          unselectedLabelColor: AppColors.textMuted,
+          indicatorColor: Theme.of(context).colorScheme.secondary,
+          labelColor: Theme.of(context).colorScheme.primary,
+          unselectedLabelColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
           labelStyle: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12),
           tabs: const [
             Tab(text: 'ID SAYA'),
@@ -113,30 +113,30 @@ class _ShareDataScreenState extends ConsumerState<ShareDataScreen> with SingleTi
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).cardTheme.color,
                 borderRadius: BorderRadius.circular(32),
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, 10)),
+                  BoxShadow(color: Colors.black.withOpacity(Theme.of(context).brightness == Brightness.dark ? 0.2 : 0.05), blurRadius: 20, offset: const Offset(0, 10)),
                 ],
               ),
               child: QrImageView(
                 data: user.uid,
                 version: QrVersions.auto,
                 size: 200.0,
-                eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.circle, color: AppColors.textDarkBlue),
-                dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.circle, color: AppColors.textDarkBlue),
+                eyeStyle: QrEyeStyle(eyeShape: QrEyeShape.circle, color: Theme.of(context).colorScheme.onSurface),
+                dataModuleStyle: QrDataModuleStyle(dataModuleShape: QrDataModuleShape.circle, color: Theme.of(context).colorScheme.onSurface),
               ),
             ),
             const SizedBox(height: 32),
             Text(
               'UID: ${user.uid.substring(0, 8)}...',
-              style: const TextStyle(color: AppColors.textMuted, fontSize: 12, fontWeight: FontWeight.bold),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4), fontSize: 12, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 48),
-            const Text(
+            Text(
               'Publikasikan ringkasan keuangan Anda agar device lain bisa melihatnya.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontSize: 13),
             ),
             const SizedBox(height: 24),
             SizedBox(
@@ -149,8 +149,8 @@ class _ShareDataScreenState extends ConsumerState<ShareDataScreen> with SingleTi
                 label: Text(_isPublishing ? 'MEMPUBLIKASIKAN...' : 'PUBLIKASIKAN DATA'),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  backgroundColor: AppColors.textDarkBlue,
-                  foregroundColor: Colors.white,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
               ),
@@ -183,16 +183,27 @@ class _ShareDataScreenState extends ConsumerState<ShareDataScreen> with SingleTi
         title: const Text('Tambah Hubungan'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Berikan nama untuk device ini:'),
+            Text('Berikan nama untuk device ini:', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7))),
+            const SizedBox(height: 12),
             TextField(
               controller: _nameController,
-              decoration: const InputDecoration(hintText: 'Contoh: Istri, Tablet'),
+              cursorColor: Theme.of(context).colorScheme.primary,
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.bold),
+              decoration: InputDecoration(
+                hintText: 'Contoh: Istri, Tablet',
+                hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3)),
+                focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Theme.of(context).colorScheme.primary)),
+              ),
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('BATAL')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('BATAL', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5), fontWeight: FontWeight.bold)),
+          ),
           TextButton(
             onPressed: () async {
               final name = _nameController.text.trim();
@@ -204,7 +215,7 @@ class _ShareDataScreenState extends ConsumerState<ShareDataScreen> with SingleTi
                 }
               }
             },
-            child: const Text('TAMBAH'),
+            child: Text('TAMBAH', style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w900)),
           ),
         ],
       ),

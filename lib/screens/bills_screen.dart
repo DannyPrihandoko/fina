@@ -29,12 +29,38 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
   }
 
   void _showSuccessDialogWith(String message) {
+    // Show SnackBar ("Bar")
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.check_circle_rounded, color: Theme.of(context).colorScheme.onSecondary, size: 20),
+            const SizedBox(width: 12),
+            Text(
+              message,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSecondary,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: Theme.of(context).colorScheme.secondary,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        margin: const EdgeInsets.fromLTRB(24, 0, 24, 100),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+
+    // Also show the Dialog (Notification)
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).cardTheme.color,
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
@@ -43,15 +69,15 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.ctaAqua.withOpacity(0.2),
+                  color: Theme.of(context).colorScheme.secondary.withOpacity(0.2),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.check_circle_rounded, color: AppColors.ctaAqua, size: 48),
+                child: Icon(Icons.check_circle_rounded, color: Theme.of(context).colorScheme.secondary, size: 48),
               ),
               const SizedBox(height: 24),
               Text(
                 message,
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textDarkBlue),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
@@ -60,7 +86,7 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
                     ? 'Data tagihan Anda telah diperbarui ke sistem.'
                     : 'Data tagihan Anda telah berhasil disimpan.',
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: AppColors.textMuted),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
               ),
               const SizedBox(height: 32),
               SizedBox(
@@ -68,8 +94,8 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
                 child: ElevatedButton(
                   onPressed: () => Navigator.pop(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.textDarkBlue,
-                    foregroundColor: Colors.white,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
                   child: const Text('OK', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -94,21 +120,27 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      extendBodyBehindAppBar: true,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.textDarkBlue, size: 20),
-          onPressed: () => ref.read(navigationProvider.notifier).state = 0,
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: Theme.of(context).colorScheme.onSurface, size: 20),
+          onPressed: () {
+            ref.read(navigationProvider.notifier).state = 0;
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            }
+          },
         ),
-        title: const Text('Tagihan Rutin', style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.textDarkBlue)),
+        title: Text('Tagihan Rutin', style: TextStyle(fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onSurface)),
         centerTitle: false,
       ),
       body: CustomScrollView(
         slivers: [
           SliverPadding(
-            padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 20, left: 20, right: 20),
+            padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 70, left: 20, right: 20),
             sliver: SliverToBoxAdapter(
               child: Column(
                 children: [
@@ -124,11 +156,11 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(28, 32, 28, 16),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(28, 32, 28, 16),
                   child: Text(
                     'Tagihan Aktif',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.textDarkBlue),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onSurface),
                   ),
                 ),
                 if (bills.where((b) => !b.isPaid).isEmpty)
@@ -148,18 +180,18 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
                     ),
                   ),
 
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(28, 48, 28, 16),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(28, 48, 28, 16),
                   child: Text(
                     'Riwayat Pembayaran',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.textDarkBlue),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onSurface),
                   ),
                 ),
                 if (bills.where((b) => b.isPaid).isEmpty)
-                   const Center(
+                   Center(
                      child: Padding(
-                       padding: EdgeInsets.symmetric(vertical: 40),
-                       child: Text('Belum ada tagihan yang dibayar.', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                       padding: const EdgeInsets.symmetric(vertical: 40),
+                       child: Text('Belum ada tagihan yang dibayar.', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5), fontSize: 13)),
                      ),
                    )
                 else
@@ -187,8 +219,8 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
         },
         label: const Text('TAMBAH TAGIHAN', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1)),
         icon: const Icon(Icons.add_rounded, size: 24),
-        backgroundColor: AppColors.ctaAqua,
-        foregroundColor: AppColors.textDarkBlue,
+        backgroundColor: Theme.of(context).colorScheme.secondary,
+        foregroundColor: Theme.of(context).colorScheme.onSecondary,
         elevation: 8,
       ),
     );
@@ -199,12 +231,12 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
-        color: AppColors.cardPaleBlue,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: AppColors.borderColor.withOpacity(0.5)),
+        border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.5)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.textDarkBlue.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.05),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -213,14 +245,14 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'TOTAL TAGIHAN BULAN INI',
-            style: TextStyle(color: AppColors.textMuted, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5),
           ),
           const SizedBox(height: 12),
           Text(
             format.format(total),
-            style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w900, color: AppColors.textDarkBlue, letterSpacing: -0.5),
+            style: TextStyle(fontSize: 34, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onSurface, letterSpacing: -0.5),
           ),
         ],
       ),
@@ -250,16 +282,16 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
   }
 
   Widget _buildBillCard(BuildContext context, Bill bill, NumberFormat format, bool isDueSoon, bool isOverdue) {
-    Color accentColor = bill.isPaid ? Colors.green : (isOverdue ? Colors.red : (isDueSoon ? Colors.orange : AppColors.ctaAqua));
+    Color accentColor = bill.isPaid ? Colors.green : (isOverdue ? Colors.red : (isDueSoon ? Colors.orange : Theme.of(context).colorScheme.secondary));
     
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: AppColors.borderColor.withOpacity(0.2),
+            color: Theme.of(context).dividerColor.withOpacity(0.2),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -314,7 +346,7 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
                           IconButton(
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
-                            icon: const Icon(Icons.edit_note_rounded, color: AppColors.textMuted, size: 26),
+                            icon: Icon(Icons.edit_note_rounded, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5), size: 26),
                             onPressed: () async {
                               final result = await Navigator.push(
                                 context,
@@ -337,19 +369,19 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
                     children: [
                       Text(
                         bill.title,
-                        style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 20, color: AppColors.textDarkBlue),
+                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20, color: Theme.of(context).colorScheme.onSurface),
                       ),
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          Icon(Icons.category_rounded, size: 12, color: AppColors.textMuted.withOpacity(0.5)),
+                          Icon(Icons.category_rounded, size: 12, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)),
                           const SizedBox(width: 6),
                           Text(
                             bill.category.toUpperCase(),
-                            style: const TextStyle(color: AppColors.textMuted, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1),
+                            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1),
                           ),
                           const SizedBox(width: 16),
-                          Icon(Icons.notifications_active_rounded, size: 12, color: bill.reminderEnabled ? AppColors.ctaAqua : AppColors.textMuted.withOpacity(0.5)),
+                          Icon(Icons.notifications_active_rounded, size: 12, color: bill.reminderEnabled ? Theme.of(context).colorScheme.secondary : Theme.of(context).colorScheme.onSurface.withOpacity(0.4)),
                         ],
                       ),
                     ],
@@ -361,7 +393,7 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
             decoration: BoxDecoration(
-              color: AppColors.cardPaleBlue.withOpacity(0.2),
+              color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
               borderRadius: const BorderRadius.vertical(bottom: Radius.circular(28)),
             ),
             child: Row(
@@ -372,13 +404,13 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
                   children: [
                     Text(
                       bill.isPaid ? 'DIBAYAR PADA' : (isOverdue ? 'JATUH TEMPO PADA' : 'TANGGAL PENAGIHAN'),
-                      style: TextStyle(color: isOverdue && !bill.isPaid ? Colors.red : AppColors.textMuted, fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 0.5),
+                      style: TextStyle(color: isOverdue && !bill.isPaid ? Colors.red : Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 0.5),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       DateFormat('dd MMMM yyyy').format(bill.dueDate),
                       style: TextStyle(
-                        color: isOverdue && !bill.isPaid ? Colors.red : AppColors.textDarkBlue,
+                        color: isOverdue && !bill.isPaid ? Colors.red : Theme.of(context).colorScheme.onSurface,
                         fontSize: 13,
                         fontWeight: FontWeight.w900,
                       ),
@@ -389,8 +421,8 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
                   ElevatedButton(
                     onPressed: () => _showWalletSelector(context, bill),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: isOverdue ? Colors.red : AppColors.textDarkBlue,
-                      foregroundColor: Colors.white,
+                      backgroundColor: isOverdue ? Colors.red : Theme.of(context).colorScheme.primary,
+                      foregroundColor: isOverdue ? Colors.white : Theme.of(context).colorScheme.onPrimary,
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -401,11 +433,11 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      const Text('JUMLAH', style: TextStyle(color: AppColors.textMuted, fontSize: 9, fontWeight: FontWeight.w900)),
+                      Text('JUMLAH', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontSize: 9, fontWeight: FontWeight.w900)),
                       const SizedBox(height: 2),
                       Text(
                         format.format(bill.amount),
-                        style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: AppColors.textDarkBlue),
+                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Theme.of(context).colorScheme.onSurface),
                       ),
                     ],
                   ),
@@ -431,10 +463,10 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Pilih Dompet Pembayaran', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.textDarkBlue)),
+                  Text('Pilih Dompet Pembayaran', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onSurface)),
                   const SizedBox(height: 24),
                   if (wallets.isEmpty)
-                    const Text('Silakan buat dompet terlebih dahulu.')
+                    Text('Silakan buat dompet terlebih dahulu.', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)))
                   else
                     Flexible(
                       child: ListView.builder(
@@ -452,8 +484,8 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
                               decoration: BoxDecoration(color: wallet.color.withOpacity(0.1), shape: BoxShape.circle),
                               child: Icon(Icons.account_balance_wallet_rounded, color: wallet.color),
                             ),
-                            title: Text(wallet.name, style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textDarkBlue)),
-                            subtitle: Text('Saldo: ${currencyFormat.format(balance)}', style: const TextStyle(fontSize: 12)),
+                            title: Text(wallet.name, style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface)),
+                            subtitle: Text('Saldo: ${currencyFormat.format(balance)}', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
                             trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
                             onTap: () {
                               Navigator.pop(context);
@@ -474,10 +506,32 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
   }
 
   void _showPaymentSuccess(BuildContext context) {
+    // Show SnackBar ("Bar")
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.check_circle_rounded, color: Theme.of(context).colorScheme.onSecondary, size: 20),
+            const SizedBox(width: 12),
+            const Text(
+              'Pembayaran Berhasil!',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+            ),
+          ],
+        ),
+        backgroundColor: Theme.of(context).colorScheme.secondary,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        margin: const EdgeInsets.fromLTRB(24, 0, 24, 40),
+      ),
+    );
+
+    // Show Dialog
     showDialog(
       context: context,
       builder: (context) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        backgroundColor: Theme.of(context).cardTheme.color,
         child: Padding(
           padding: const EdgeInsets.all(32),
           child: Column(
@@ -485,17 +539,17 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
             children: [
               const Icon(Icons.check_circle_outline_rounded, color: Colors.green, size: 64),
               const SizedBox(height: 24),
-              const Text('Pembayaran Berhasil!', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.textDarkBlue)),
+              Text('Pembayaran Berhasil!', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onSurface)),
               const SizedBox(height: 12),
-              const Text('Tagihan telah dibayarkan dan dicatat sebagai pengeluaran.', textAlign: TextAlign.center, style: TextStyle(color: AppColors.textMuted)),
+              Text('Tagihan telah dibayarkan dan dicatat sebagai pengeluaran.', textAlign: TextAlign.center, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
               const SizedBox(height: 32),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () => Navigator.pop(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.textDarkBlue,
-                    foregroundColor: Colors.white,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
                   child: const Text('OK'),
@@ -517,15 +571,15 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
             Container(
               padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
-                color: AppColors.cardPaleBlue.withOpacity(0.3),
+                color: Theme.of(context).colorScheme.secondary.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.receipt_long_rounded, size: 56, color: AppColors.textMuted.withOpacity(0.2)),
+              child: Icon(Icons.receipt_long_rounded, size: 56, color: Theme.of(context).colorScheme.secondary.withOpacity(0.4)),
             ),
             const SizedBox(height: 24),
-            const Text('Belum ada tagihan terdaftar.', style: TextStyle(color: AppColors.textMuted, fontWeight: FontWeight.w900)),
+            Text('Belum ada tagihan terdaftar.', style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.w900)),
             const SizedBox(height: 8),
-            const Text('Tambah tagihan rutin Anda di sini.', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+            Text('Tambah tagihan rutin Anda di sini.', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontSize: 12)),
           ],
         ),
       ),

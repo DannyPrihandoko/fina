@@ -60,7 +60,9 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.textDarkBlue,
+      backgroundColor: Theme.of(context).brightness == Brightness.dark 
+          ? Theme.of(context).scaffoldBackgroundColor 
+          : Theme.of(context).colorScheme.primary,
       body: Center(
         child: FadeTransition(
           opacity: _fadeAnimation,
@@ -74,12 +76,13 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                   height: 160,
                   padding: const EdgeInsets.all(32),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
+                    color: Colors.white.withOpacity(Theme.of(context).brightness == Brightness.dark ? 0.05 : 0.15),
                     shape: BoxShape.circle,
                   ),
                   child: Image.asset(
                     'assets/icon/logo_apps.png',
                     fit: BoxFit.contain,
+                    color: Colors.white, // Keep logo white on primary/dark background
                   ),
                 ),
                 const SizedBox(height: 40),

@@ -18,7 +18,7 @@ class ConnectionsScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Hubungan Keuangan', style: TextStyle(fontWeight: FontWeight.w900)),
+        title: Text('Hubungan Keuangan', style: TextStyle(fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onSurface)),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
@@ -44,8 +44,8 @@ class ConnectionsScreen extends ConsumerWidget {
           context,
           MaterialPageRoute(builder: (context) => const ShareDataScreen()),
         ),
-        backgroundColor: AppColors.ctaAqua,
-        foregroundColor: AppColors.textDarkBlue,
+        backgroundColor: Theme.of(context).colorScheme.secondary,
+        foregroundColor: Theme.of(context).colorScheme.onSecondary,
         icon: const Icon(Icons.qr_code_scanner_rounded),
         label: const Text('BAGI DATA', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12)),
       ),
@@ -60,23 +60,23 @@ class ConnectionsScreen extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
-              color: AppColors.cardPaleBlue,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.people_outline_rounded, size: 80, color: AppColors.textMuted),
+            child: Icon(Icons.people_outline_rounded, size: 80, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3)),
           ),
           const SizedBox(height: 32),
-          const Text(
+          Text(
             'Belum ada Hubungan',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textDarkBlue),
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
           ),
           const SizedBox(height: 12),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 48),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 48),
             child: Text(
               'Scan QR code device lain untuk melihat rekap keuangan mereka di sini.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.textMuted),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
             ),
           ),
         ],
@@ -93,7 +93,7 @@ class ConnectionsScreen extends ConsumerWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.borderColor),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: ListTile(
         onTap: () => Navigator.push(
@@ -107,22 +107,22 @@ class ConnectionsScreen extends ConsumerWidget {
         ),
         title: Text(
           connection.name,
-          style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.textDarkBlue),
+          style: TextStyle(fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onSurface),
         ),
         subtitle: Text(
           data != null 
               ? 'Terakhir update: ${DateFormat('dd MMM HH:mm').format(data['updatedAt'] is Timestamp ? (data['updatedAt'] as Timestamp).toDate() : DateTime.now())}'
               : 'Belum ada data',
-          style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+          style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
         ),
         trailing: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            const Text('SALDO', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: AppColors.textMuted)),
+            Text('SALDO', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5))),
             Text(
               NumberFormat.currency(locale: 'id', symbol: 'Rp', decimalDigits: 0).format(totalBalance),
-              style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.ctaAqua),
+              style: TextStyle(fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.secondary),
             ),
           ],
         ),
