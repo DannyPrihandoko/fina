@@ -64,7 +64,47 @@ class WalletsScreen extends ConsumerWidget {
                     child: Column(
                       children: wallets.map((wallet) {
                         final balance = ref.watch(walletBalanceProvider(wallet.id!));
-                        return _buildWalletItem(context, ref, wallet, balance, currencyFormat);
+                        return Dismissible(
+                          key: ValueKey('wallet_${wallet.id}'),
+                          direction: DismissDirection.endToStart,
+                          confirmDismiss: (direction) async {
+                            if (wallets.length <= 1) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: const Text('Minimal harus ada 1 dompet tersisa.'),
+                                  backgroundColor: Colors.redAccent,
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                  margin: const EdgeInsets.fromLTRB(24, 0, 24, 40),
+                                ),
+                              );
+                              return false;
+                            }
+                            return true;
+                          },
+                          background: Container(
+                            margin: const EdgeInsets.only(bottom: 20),
+                            alignment: Alignment.centerRight,
+                            padding: const EdgeInsets.symmetric(horizontal: 30),
+                            decoration: BoxDecoration(
+                              color: Colors.redAccent.withOpacity(0.8),
+                              borderRadius: BorderRadius.circular(32),
+                            ),
+                            child: const Icon(Icons.delete_outline_rounded, color: Colors.white, size: 32),
+                          ),
+                          onDismissed: (direction) {
+                            ref.read(walletsProvider.notifier).removeWallet(wallet.id!);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Dompet "${wallet.name}" telah dihapus.'),
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                margin: const EdgeInsets.fromLTRB(24, 0, 24, 40),
+                              ),
+                            );
+                          },
+                          child: _buildWalletItem(context, ref, wallet, balance, currencyFormat),
+                        );
                       }).toList(),
                     ),
                   ),
@@ -125,60 +165,111 @@ class WalletsScreen extends ConsumerWidget {
   }
 
   Widget _buildWalletItem(BuildContext context, WidgetRef ref, Wallet wallet, double balance, NumberFormat format) {
+    IconData bgIcon;
+    switch (wallet.type) {
+      case WalletType.cash:
+        bgIcon = Icons.payments_rounded;
+        break;
+      case WalletType.bank:
+        bgIcon = Icons.account_balance_rounded;
+        break;
+      case WalletType.ewallet:
+        bgIcon = Icons.smartphone_rounded;
+        break;
+    }
+
     return GestureDetector(
       onLongPress: () => _showWalletDialog(context, ref, wallet: wallet),
       child: Container(
         margin: const EdgeInsets.only(bottom: 20),
-        padding: const EdgeInsets.all(28),
-        decoration: BoxDecoration(
-          color: wallet.color,
-          borderRadius: BorderRadius.circular(32),
-          boxShadow: [
-            BoxShadow(
-              color: wallet.color.withOpacity(0.4),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
-            ),
-          ],
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              wallet.color,
-              wallet.color.withBlue(wallet.color.blue + 30).withRed(wallet.color.red + 10),
-            ],
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        height: 180,
+        child: Stack(
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    shape: BoxShape.circle,
+            // Base Card
+            Container(
+              decoration: BoxDecoration(
+                color: wallet.color,
+                borderRadius: BorderRadius.circular(32),
+                boxShadow: [
+                  BoxShadow(
+                    color: wallet.color.withOpacity(0.4),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
                   ),
-                  child: Icon(Wallet.getIcon(wallet.type), color: Colors.white, size: 24),
+                ],
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    wallet.color,
+                    wallet.color.withBlue(wallet.color.blue + 40).withRed(wallet.color.red + 10).withGreen(wallet.color.green + 5),
+                  ],
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(20)),
-                  child: Text(
-                    wallet.type.name.toUpperCase(),
-                    style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.w900, letterSpacing: 1.5),
-                  ),
-                ),
-              ],
+              ),
             ),
-            const SizedBox(height: 24),
-            Text(wallet.name, style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14, fontWeight: FontWeight.w600)),
-            const SizedBox(height: 4),
-            Text(
-              format.format(balance),
-              style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w900, letterSpacing: -0.5),
+            
+            // Large Background Icon
+            Positioned(
+              right: -20,
+              bottom: -20,
+              child: Opacity(
+                opacity: 0.15,
+                child: Icon(
+                  bgIcon,
+                  size: 160,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+
+            // Card Content
+            Padding(
+              padding: const EdgeInsets.all(28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Wallet.getIcon(wallet.type), color: Colors.white, size: 24),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.white.withOpacity(0.2)),
+                        ),
+                        child: Text(
+                          wallet.type.name.toUpperCase(),
+                          style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 1.5),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  Text(
+                    wallet.name.toUpperCase(), 
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.9), 
+                      fontSize: 12, 
+                      fontWeight: FontWeight.w900, 
+                      letterSpacing: 1
+                    )
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    format.format(balance),
+                    style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w900, letterSpacing: -1),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -321,6 +412,7 @@ class WalletsScreen extends ConsumerWidget {
                 child: ElevatedButton(
                   onPressed: () {
                     if (nameController.text.isNotEmpty) {
+                      String feedbackMessage = '';
                       if (isEditing) {
                         final updatedWallet = Wallet(
                           id: wallet.id,
@@ -329,7 +421,7 @@ class WalletsScreen extends ConsumerWidget {
                           color: selectedColor,
                         );
                         ref.read(walletsProvider.notifier).updateWallet(updatedWallet);
-                        _showSuccessFeedback(context, 'Update Berhasil!');
+                        feedbackMessage = 'Update Berhasil!';
                       } else {
                         final newWallet = Wallet(
                           name: nameController.text,
@@ -338,9 +430,10 @@ class WalletsScreen extends ConsumerWidget {
                         );
                         final initialBalance = double.tryParse(balanceController.text) ?? 0;
                         ref.read(walletsProvider.notifier).addWallet(newWallet, initialBalance);
-                        _showSuccessFeedback(context, 'Dompet Berhasil Dibuat!');
+                        feedbackMessage = 'Dompet Berhasil Dibuat!';
                       }
-                      Navigator.pop(context);
+                      Navigator.pop(context); // Close bottom sheet
+                      _showSuccessFeedback(context, feedbackMessage);
                     }
                   },
                   style: ElevatedButton.styleFrom(
@@ -364,81 +457,96 @@ class WalletsScreen extends ConsumerWidget {
   }
 
   void _showSuccessFeedback(BuildContext context, String message) {
-    // Show SnackBar ("Bar")
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(Icons.check_circle_rounded, color: Theme.of(context).colorScheme.onSecondary, size: 20),
-            const SizedBox(width: 12),
-            Text(
-              message,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.onSecondary,
-                fontSize: 13,
+    final isUpdate = message.toLowerCase().contains('update') || 
+                     message.toLowerCase().contains('perubahan') || 
+                     message.toLowerCase().contains('simpan');
+    
+    final subtitle = isUpdate
+        ? 'Data dompet Anda telah diperbarui ke sistem.'
+        : 'Dompet baru Anda telah berhasil didaftarkan.';
+
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierLabel: 'Success Dialog',
+      barrierColor: Colors.black54,
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (ctx, anim1, anim2) => Container(),
+      transitionBuilder: (ctx, anim1, anim2, child) {
+        final curvedAnim = CurvedAnimation(parent: anim1, curve: Curves.easeOutBack);
+        return ScaleTransition(
+          scale: curvedAnim,
+          child: FadeTransition(
+            opacity: anim1,
+            child: Dialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+              backgroundColor: Theme.of(context).cardTheme.color,
+              elevation: 20,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Theme.of(context).colorScheme.secondary.withOpacity(0.2),
+                            Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                          ],
+                        ),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.check_circle_rounded,
+                        color: Theme.of(context).colorScheme.secondary,
+                        size: 56,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      message,
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      subtitle,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                        fontSize: 14,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.of(ctx).pop(),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Theme.of(context).colorScheme.primary,
+                          foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          elevation: 4,
+                          shadowColor: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                        ),
+                        child: const Text('OK', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15, letterSpacing: 1)),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ],
-        ),
-        backgroundColor: Theme.of(context).colorScheme.secondary,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        margin: const EdgeInsets.fromLTRB(24, 0, 24, 40),
-        duration: const Duration(seconds: 3),
-      ),
-    );
-
-    // Show Dialog
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        backgroundColor: Theme.of(context).cardTheme.color,
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.secondary.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(Icons.check_circle_rounded, color: Theme.of(context).colorScheme.secondary, size: 48),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                message,
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                message.contains('Update') 
-                    ? 'Data dompet Anda telah diperbarui.'
-                    : 'Dompet baru Anda telah berhasil didaftarkan.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
-              ),
-              const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  ),
-                  child: const Text('OK', style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-              ),
-            ],
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

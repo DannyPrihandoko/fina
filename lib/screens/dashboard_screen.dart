@@ -331,63 +331,113 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildWalletCard(BuildContext context, Wallet wallet, double balance, NumberFormat format) {
+    IconData bgIcon;
+    switch (wallet.type) {
+      case WalletType.cash:
+        bgIcon = Icons.payments_rounded;
+        break;
+      case WalletType.bank:
+        bgIcon = Icons.account_balance_rounded;
+        break;
+      case WalletType.ewallet:
+        bgIcon = Icons.smartphone_rounded;
+        break;
+    }
+
     return Container(
       margin: const EdgeInsets.only(right: 16, bottom: 12),
-      padding: const EdgeInsets.all(28),
-      decoration: BoxDecoration(
-        color: wallet.color,
-        borderRadius: BorderRadius.circular(32),
-        boxShadow: [
-          BoxShadow(
-            color: wallet.color.withOpacity(0.4),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            wallet.color,
-            wallet.color.withBlue(wallet.color.blue + 30).withRed(wallet.color.red + 10),
-          ],
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Stack(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  shape: BoxShape.circle,
+          // Base Card
+          Container(
+            decoration: BoxDecoration(
+              color: wallet.color,
+              borderRadius: BorderRadius.circular(32),
+              boxShadow: [
+                BoxShadow(
+                  color: wallet.color.withOpacity(0.4),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
                 ),
-                child: Icon(Wallet.getIcon(wallet.type), color: Colors.white, size: 28),
+              ],
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  wallet.color,
+                  wallet.color.withBlue(wallet.color.blue + 40).withRed(wallet.color.red + 10).withGreen(wallet.color.green + 5),
+                ],
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(20)),
-                child: Text(
-                  wallet.type.name.toUpperCase(),
-                  style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.w900, letterSpacing: 1.5),
-                ),
-              ),
-            ],
+            ),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(wallet.name, style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14, fontWeight: FontWeight.w600)),
-              const SizedBox(height: 6),
-              Text(
-                format.format(balance), 
-                style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w900, letterSpacing: -0.5)
+          
+          // Large Background Icon
+          Positioned(
+            right: -20,
+            bottom: -20,
+            child: Opacity(
+              opacity: 0.15,
+              child: Icon(
+                bgIcon,
+                size: 160,
+                color: Colors.white,
               ),
-            ],
+            ),
+          ),
+
+          // Card Content
+          Padding(
+            padding: const EdgeInsets.all(28),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(Wallet.getIcon(wallet.type), color: Colors.white, size: 24),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.white.withOpacity(0.2)),
+                      ),
+                      child: Text(
+                        wallet.type.name.toUpperCase(),
+                        style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.w900, letterSpacing: 1.5),
+                      ),
+                    ),
+                  ],
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      wallet.name.toUpperCase(), 
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.9), 
+                        fontSize: 10, 
+                        fontWeight: FontWeight.w900, 
+                        letterSpacing: 1
+                      )
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      format.format(balance), 
+                      style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w900, letterSpacing: -1)
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ],
       ),

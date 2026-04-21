@@ -246,13 +246,10 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'bills_fab',
         onPressed: () async {
-          final result = await Navigator.push<String>(
+          await Navigator.push<String>(
             context,
             MaterialPageRoute(builder: (context) => const AddBillScreen()),
           );
-          if (result != null && mounted) {
-            _showSuccessDialog(result == 'update' ? 'Data Berhasil Disimpan!' : 'Tagihan Berhasil Dijadwalkan!');
-          }
         },
         label: const Text('TAMBAH TAGIHAN', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1)),
         icon: const Icon(Icons.add_rounded, size: 24),
@@ -385,13 +382,10 @@ class _BillsScreenState extends ConsumerState<BillsScreen> {
                             constraints: const BoxConstraints(),
                             icon: Icon(Icons.edit_note_rounded, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5), size: 26),
                             onPressed: () async {
-                              final result = await Navigator.push<String>(
+                              await Navigator.push<String>(
                                 context,
                                 MaterialPageRoute(builder: (context) => AddBillScreen(existingBill: bill)),
                               );
-                              if (result != null && mounted) {
-                                _showSuccessDialog(result == 'update' ? 'Data Berhasil Disimpan!' : 'Tagihan Berhasil Dijadwalkan!');
-                              }
                             },
                           ),
                       ],
