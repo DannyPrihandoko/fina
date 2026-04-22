@@ -37,30 +37,7 @@ class GoalsScreen extends ConsumerWidget {
                 ),
               ),
             ),
-            actions: [
-              Padding(
-                padding: const EdgeInsets.only(right: 16),
-                child: IconButton(
-                  onPressed: () async {
-                    final result = await Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const AddGoalScreen()),
-                    );
-                    if (result == 'added') {
-                      _showSuccessDialog(context, 'Target Berhasil Dibuat!');
-                    }
-                  },
-                  icon: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.secondary,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(Icons.add_rounded, color: Theme.of(context).colorScheme.onSecondary, size: 20),
-                  ),
-                ),
-              ),
-            ],
+
           ),
 
           // Summary Card
@@ -93,6 +70,23 @@ class GoalsScreen extends ConsumerWidget {
 
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'goals_fab',
+        onPressed: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AddGoalScreen()),
+          );
+          if (result == 'added') {
+            _showSuccessDialog(context, 'Target Berhasil Dibuat!');
+          }
+        },
+        label: const Text('TAMBAH TARGET', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1)),
+        icon: const Icon(Icons.add_rounded, size: 24),
+        backgroundColor: Theme.of(context).colorScheme.secondary,
+        foregroundColor: Theme.of(context).colorScheme.onSecondary,
+        elevation: 8,
       ),
     );
   }

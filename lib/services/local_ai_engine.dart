@@ -538,6 +538,59 @@ class LocalAIEngine {
   bool _containsAny(String query, List<String> keywords) {
     return keywords.any((k) => query.contains(k));
   }
+
+  /// Detects unusual spending by comparing current month to previous month.
+  /// Returns a list of alert messages if thresholds are exceeded.
+  List<String> detectUnusualSpending({
+    required List<Transaction> transactions,
+    required Transaction newTransaction,
+  }) {
+    final List<String> alerts = [];
+    final now = DateTime.now();
+    
+    // 1. Calculate Previous Month Total
+    final lastMonthStart = DateTime(now.year, now.month - 1, 1);
+    final lastMonthEnd = DateTime(now.year, now.month, 0); // Last day of prev month
+    
+    final lastMonthTxs = transactions.where((tx) => 
+      tx.type == TransactionType.expense && 
+      tx.date.isAfter(lastMonthStart.subtract(const Duration(seconds: 1))) && 
+      tx.date.isBefore(lastMonthEnd.add(const Duration(seconds: 1)))
+    ).toList();
+    
+    final lastMonthTotal = lastMonthTxs.fold(0.0, (sum, tx) => sum + tx.amount);
+    final lastMonthCategoryTotal = lastMonthTxs
+        .where((tx) => tx.category == newTransaction.category)
+        .fold(0.0, (sum, tx) => sum + tx.amount);
+
+    // 2. Calculate Current Month Total (including the new transaction)
+    final thisMonthStart = DateTime(now.year, now.month, 1);
+    final thisMonthTxs = transactions.where((tx) => 
+      tx.type == TransactionType.expense && 
+      tx.date.isAfter(thisMonthStart.subtract(const Duration(seconds: 1)))
+    ).toList();
+    
+    final thisMonthTotalBefore = thisMonthTxs.fold(0.0, (sum, tx) => sum + tx.amount);
+    final thisMonthTotalAfter = thisMonthTotalBefore + newTransaction.amount;
+    
+    final thisMonthCategoryTotalBefore = thisMonthTxs
+        .where((tx) => tx.category == newTransaction.category)
+        .fold(0.0, (sum, tx) => sum + tx.amount);
+    final thisMonthCategoryTotalAfter = thisMonthCategoryTotalBefore + newTransaction.amount;
+
+    // 3. Comparisons
+    // A. Total monthly spending check
+    if (thisMonthTotalBefore <= lastMonthTotal && thisMonthTotalAfter > lastMonthTotal && lastMonthTotal > 0) {
+      alerts.add("Total pengeluaran bulan ini (${currencyFormat.format(thisMonthTotalAfter)}) sudah melebihi total bulan lalu (${currencyFormat.format(lastMonthTotal)}).");
+    }
+
+    // B. Category-specific check
+    if (thisMonthCategoryTotalBefore <= lastMonthCategoryTotal && thisMonthCategoryTotalAfter > lastMonthCategoryTotal && lastMonthCategoryTotal > 0) {
+      alerts.add("Pengeluaran kategori ${newTransaction.category} bulan ini (${currencyFormat.format(thisMonthCategoryTotalAfter)}) sudah melebihi bulan lalu (${currencyFormat.format(lastMonthCategoryTotal)}).");
+    }
+
+    return alerts;
+  }
 }
 
 class _IntentResult {

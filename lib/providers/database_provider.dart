@@ -8,6 +8,8 @@ import '../models/financial_goal.dart';
 
 import 'package:fina/providers/settings_provider.dart';
 import 'package:flutter/foundation.dart';
+import '../services/notification_service.dart';
+import '../services/local_ai_engine.dart';
 
 final databaseServiceProvider = Provider((ref) => DatabaseService.instance);
 
@@ -102,9 +104,26 @@ class TransactionsNotifier extends StateNotifier<List<Transaction>> {
   }
 
   Future<void> addTransaction(Transaction tx) async {
-    await _dbService.createTransaction(tx);
+    final id = await _dbService.createTransaction(tx);
     await loadTransactions();
     await _ref.read(settingsProvider.notifier).revealInsight();
+
+    // Smart Alerts Logic
+    final settings = _ref.read(settingsProvider);
+    if (settings.isSmartAlertsEnabled && tx.type == TransactionType.expense) {
+      final transactions = state;
+      final alerts = LocalAIEngine().detectUnusualSpending(
+        transactions: transactions.where((t) => t.id != id).toList(),
+        newTransaction: tx,
+      );
+
+      for (var alert in alerts) {
+        await NotificationService().showSmartAlert(
+          title: 'fina: Alert Pengeluaran',
+          body: alert,
+        );
+      }
+    }
   }
 
   Future<void> removeTransaction(int id) async {
@@ -123,26 +142,57 @@ class BillsNotifier extends StateNotifier<List<Bill>> {
   final Ref _ref;
 
   BillsNotifier(this._dbService, this._ref) : super([]) {
-    loadBills();
+    _init();
+  }
+
+  Future<void> _init() async {
+    await loadBills();
+    await syncReminders();
   }
 
   Future<void> loadBills() async {
     state = await _dbService.getAllBills();
   }
 
+  Future<void> syncReminders() async {
+    final settings = _ref.read(settingsProvider);
+    if (!settings.isNotificationsEnabled) return;
+
+    for (var bill in state) {
+      if (!bill.isPaid && bill.reminderEnabled) {
+        await NotificationService().scheduleBillReminders(bill);
+      }
+    }
+  }
+
   Future<int> addBill(Bill bill) async {
     final id = await _dbService.createBill(bill);
     await loadBills();
+    
+    // Auto-schedule notification
+    final settings = _ref.read(settingsProvider);
+    if (settings.isNotificationsEnabled) {
+      final updatedBill = bill.copyWith(id: id);
+      await NotificationService().scheduleBillReminders(updatedBill);
+    }
+    
     return id;
   }
 
   Future<void> updateBill(Bill bill) async {
     await _dbService.updateBill(bill);
     await loadBills();
+
+    // Reschedule notification
+    final settings = _ref.read(settingsProvider);
+    if (settings.isNotificationsEnabled) {
+      await NotificationService().scheduleBillReminders(bill);
+    }
   }
 
   Future<void> removeBill(int id) async {
     await _dbService.deleteBill(id);
+    await NotificationService().cancelBillReminders(id);
     await loadBills();
   }
 

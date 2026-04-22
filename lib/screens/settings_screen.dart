@@ -125,6 +125,15 @@ class SettingsScreen extends ConsumerWidget {
                         value: notificationsEnabled,
                         onChanged: (value) => _toggleNotifications(ref, context, value),
                       ),
+                      _buildSwitchItem(
+                        context,
+                        icon: Icons.auto_graph_rounded,
+                        iconColor: Colors.amber,
+                        title: 'Smart Alerts',
+                        subtitle: 'Notifikasi pengeluaran melebihi bulan lalu',
+                        value: settings.isSmartAlertsEnabled,
+                        onChanged: (value) => ref.read(settingsProvider.notifier).setSmartAlertsEnabled(value),
+                      ),
                       if (notificationsEnabled) ...[
                         _buildSettingsItem(
                           context,

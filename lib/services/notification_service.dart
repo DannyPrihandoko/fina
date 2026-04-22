@@ -65,8 +65,19 @@ class NotificationService {
         showBadge: true,
       );
 
+      // 3. Smart Alerts Channel
+      const AndroidNotificationChannel smartChannel = AndroidNotificationChannel(
+        'smart_alerts_channel',
+        'Alert Pintar',
+        description: 'Pemberitahuan pengeluaran tidak wajar',
+        importance: Importance.high,
+        playSound: true,
+        enableVibration: true,
+      );
+
       await androidPlugin?.createNotificationChannel(billChannel);
       await androidPlugin?.createNotificationChannel(testChannel);
+      await androidPlugin?.createNotificationChannel(smartChannel);
       debugPrint('Notification Channels Created Successfully');
     }
   }
@@ -160,6 +171,36 @@ class NotificationService {
   Future<void> cancelBillReminders(int billId) async {
     await _notificationsPlugin.cancel(billId * 2);
     await _notificationsPlugin.cancel(billId * 2 + 1);
+  }
+
+  Future<void> showSmartAlert({required String title, required String body}) async {
+    try {
+      const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+        'smart_alerts_channel',
+        'Alert Pintar',
+        channelDescription: 'Pemberitahuan pengeluaran tidak wajar',
+        importance: Importance.high,
+        priority: Priority.high,
+      );
+
+      const NotificationDetails notificationDetails = NotificationDetails(
+        android: androidDetails,
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        ),
+      );
+
+      await _notificationsPlugin.show(
+        888, // Static ID for smart alerts or use timestamp for multiple
+        title,
+        body,
+        notificationDetails,
+      );
+    } catch (e) {
+      debugPrint('Error showing smart alert: $e');
+    }
   }
 
   Future<void> showTestNotification() async {

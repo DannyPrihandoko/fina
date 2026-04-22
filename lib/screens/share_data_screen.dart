@@ -21,6 +21,7 @@ class _ShareDataScreenState extends ConsumerState<ShareDataScreen> with SingleTi
   late TabController _tabController;
   final TextEditingController _nameController = TextEditingController();
   bool _isPublishing = false;
+  bool _isDialogShowing = false;
 
   @override
   void initState() {
@@ -167,6 +168,8 @@ class _ShareDataScreenState extends ConsumerState<ShareDataScreen> with SingleTi
   Widget _buildScanTab() {
     return MobileScanner(
       onDetect: (capture) async {
+        if (_isDialogShowing) return;
+        
         final List<Barcode> barcodes = capture.barcodes;
         for (final barcode in barcodes) {
           if (barcode.rawValue != null) {
@@ -180,8 +183,10 @@ class _ShareDataScreenState extends ConsumerState<ShareDataScreen> with SingleTi
   }
 
   void _showAddConnectionDialog(String uid) {
+    setState(() => _isDialogShowing = true);
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) => AlertDialog(
         title: const Text('Tambah Hubungan'),
         content: Column(
@@ -204,7 +209,10 @@ class _ShareDataScreenState extends ConsumerState<ShareDataScreen> with SingleTi
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              setState(() => _isDialogShowing = false);
+              Navigator.pop(context);
+            },
             child: Text('BATAL', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5), fontWeight: FontWeight.bold)),
           ),
           TextButton(
@@ -213,8 +221,9 @@ class _ShareDataScreenState extends ConsumerState<ShareDataScreen> with SingleTi
               if (name.isNotEmpty) {
                 await ref.read(socialProvider.notifier).addConnection(uid, name);
                 if (mounted) {
+                  setState(() => _isDialogShowing = false);
                   Navigator.pop(context); // Close dialog
-                  Navigator.pop(context); // Back to ConnectionsScreen
+                  Navigator.pop(context, 'added'); // Back to ConnectionsScreen
                 }
               }
             },
@@ -222,6 +231,10 @@ class _ShareDataScreenState extends ConsumerState<ShareDataScreen> with SingleTi
           ),
         ],
       ),
-    );
+    ).then((_) {
+       if (mounted && _isDialogShowing) {
+         setState(() => _isDialogShowing = false);
+       }
+    });
   }
 }

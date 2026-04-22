@@ -12,6 +12,7 @@ final settingsProvider = StateNotifierProvider<SettingsNotifier, SettingsState>(
 
 class SettingsState {
   final bool isNotificationsEnabled;
+  final bool isSmartAlertsEnabled;
   final bool isInsightDismissed;
   final bool isDarkMode;
   final String userName;
@@ -19,6 +20,7 @@ class SettingsState {
 
   SettingsState({
     required this.isNotificationsEnabled,
+    required this.isSmartAlertsEnabled,
     required this.isInsightDismissed,
     required this.isDarkMode,
     required this.userName,
@@ -27,6 +29,7 @@ class SettingsState {
 
   SettingsState copyWith({
     bool? isNotificationsEnabled,
+    bool? isSmartAlertsEnabled,
     bool? isInsightDismissed,
     bool? isDarkMode,
     String? userName,
@@ -34,6 +37,7 @@ class SettingsState {
   }) {
     return SettingsState(
       isNotificationsEnabled: isNotificationsEnabled ?? this.isNotificationsEnabled,
+      isSmartAlertsEnabled: isSmartAlertsEnabled ?? this.isSmartAlertsEnabled,
       isInsightDismissed: isInsightDismissed ?? this.isInsightDismissed,
       isDarkMode: isDarkMode ?? this.isDarkMode,
       userName: userName ?? this.userName,
@@ -46,6 +50,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   final SharedPreferences _prefs;
 
   static const _notificationsKey = 'notifications_enabled';
+  static const _smartAlertsKey = 'smart_alerts_enabled';
   static const _insightKey = 'insight_dismissed';
   static const _darkModeKey = 'dark_mode';
   static const _userNameKey = 'user_name';
@@ -54,6 +59,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   SettingsNotifier(this._prefs)
       : super(SettingsState(
           isNotificationsEnabled: _prefs.getBool(_notificationsKey) ?? false,
+          isSmartAlertsEnabled: _prefs.getBool(_smartAlertsKey) ?? false,
           isInsightDismissed: _prefs.getBool(_insightKey) ?? false,
           isDarkMode: _prefs.getBool(_darkModeKey) ?? false,
           userName: _prefs.getString(_userNameKey) ?? 'User Fina',
@@ -63,6 +69,11 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   Future<void> setNotificationsEnabled(bool value) async {
     await _prefs.setBool(_notificationsKey, value);
     state = state.copyWith(isNotificationsEnabled: value);
+  }
+
+  Future<void> setSmartAlertsEnabled(bool value) async {
+    await _prefs.setBool(_smartAlertsKey, value);
+    state = state.copyWith(isSmartAlertsEnabled: value);
   }
 
   Future<void> setDarkMode(bool value) async {
