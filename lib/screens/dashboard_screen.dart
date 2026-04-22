@@ -583,7 +583,50 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         separatorBuilder: (context, index) => const Divider(height: 1, color: AppColors.borderColor, indent: 60),
         itemBuilder: (context, index) {
           final tx = todayTransactions[index];
-          return _buildTransactionItem(context, tx, format);
+          return Dismissible(
+            key: Key('dash_tx_${tx.id}'),
+            direction: DismissDirection.endToStart,
+            confirmDismiss: (direction) async {
+              return await showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+                  title: const Text('Hapus Transaksi?'),
+                  content: Text('Transaksi "${tx.title}" akan dihapus secara permanen.'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: Text('BATAL', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5))),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: const Text('HAPUS', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ),
+              );
+            },
+            onDismissed: (direction) {
+              ref.read(transactionsProvider.notifier).removeTransaction(tx.id!);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Transaksi "${tx.title}" telah dihapus.'),
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+              );
+            },
+            background: Container(
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              decoration: BoxDecoration(
+                color: Colors.redAccent.withOpacity(0.8),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Icon(Icons.delete_outline_rounded, color: Colors.white, size: 24),
+            ),
+            child: _buildTransactionItem(context, tx, format),
+          );
         },
       ),
     );

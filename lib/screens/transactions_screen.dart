@@ -152,12 +152,56 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                       toW = wallets.firstWhere((w) => w.id == tx.toWalletId, orElse: () => w);
                                     }
                                     
-                                    return Column(
-                                      children: [
-                                        _buildTransactionItem(context, tx, w, toW, currencyFormat),
-                                        if (i < txs.length - 1)
-                                          Divider(height: 1, color: Theme.of(context).dividerColor, indent: 70, endIndent: 20),
-                                      ],
+                                    return Dismissible(
+                                      key: Key('tx_${tx.id}'),
+                                      direction: DismissDirection.endToStart,
+                                      confirmDismiss: (direction) async {
+                                        return await showDialog(
+                                          context: context,
+                                          builder: (ctx) => AlertDialog(
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+                                            title: const Text('Hapus Transaksi?'),
+                                            content: Text('Transaksi "${tx.title}" akan dihapus secara permanen.'),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () => Navigator.pop(ctx, false),
+                                                child: Text('BATAL', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5))),
+                                              ),
+                                              TextButton(
+                                                onPressed: () => Navigator.pop(ctx, true),
+                                                child: const Text('HAPUS', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      },
+                                      onDismissed: (direction) {
+                                        ref.read(transactionsProvider.notifier).removeTransaction(tx.id!);
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text('Transaksi "${tx.title}" telah dihapus.'),
+                                            behavior: SnackBarBehavior.floating,
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                          ),
+                                        );
+                                      },
+                                      background: Container(
+                                        margin: const EdgeInsets.only(bottom: 24),
+                                        alignment: Alignment.centerRight,
+                                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                                        decoration: BoxDecoration(
+                                          color: Colors.redAccent.withOpacity(0.8),
+                                          borderRadius: BorderRadius.circular(24),
+                                        ),
+                                        child: const Icon(Icons.delete_outline_rounded, color: Colors.white, size: 28),
+                                      ),
+                                      child: Column(
+                                        children: [
+                                          _buildTransactionItem(context, tx, w, toW, currencyFormat),
+                                          if (i < txs.length - 1)
+                                            Divider(height: 1, color: Theme.of(context).dividerColor, indent: 70, endIndent: 20),
+                                        ],
+                                      ),
                                     );
                                   }).toList(),
                                 ),
