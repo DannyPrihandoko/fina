@@ -15,6 +15,10 @@ import '../models/bill.dart';
 import '../models/budget.dart';
 import '../providers/settings_provider.dart';
 import '../providers/navigation_provider.dart';
+import '../providers/streak_provider.dart';
+import '../widgets/streak_badge.dart';
+
+
 
 import 'package:image_picker/image_picker.dart';
 import '../services/ocr_service.dart';
@@ -160,6 +164,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             onPressed: _showScanOptions,
             tooltip: 'Scan Struk',
           ),
+          Consumer(
+            builder: (context, ref, child) {
+              final streak = ref.watch(streakProvider);
+              return StreakBadge(streakCount: streak);
+            },
+          ),
+
+
           IconButton(
             icon: Icon(Icons.notifications_none_rounded, color: Theme.of(context).colorScheme.onSurface),
             onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen())),

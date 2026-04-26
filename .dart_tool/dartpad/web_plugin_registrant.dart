@@ -9,7 +9,6 @@
 import 'package:cloud_firestore_web/cloud_firestore_web.dart';
 import 'package:firebase_auth_web/firebase_auth_web.dart';
 import 'package:firebase_core_web/firebase_core_web.dart';
-import 'package:flutter_native_splash/flutter_native_splash_web.dart';
 import 'package:flutter_timezone/flutter_timezone_web.dart';
 import 'package:image_picker_for_web/image_picker_for_web.dart';
 import 'package:mobile_scanner/src/web/mobile_scanner_web.dart';
@@ -21,7 +20,6 @@ void registerPlugins([final Registrar? pluginRegistrar]) {
   FirebaseFirestoreWeb.registerWith(registrar);
   FirebaseAuthWeb.registerWith(registrar);
   FirebaseCoreWeb.registerWith(registrar);
-  FlutterNativeSplashWeb.registerWith(registrar);
   FlutterTimezonePlugin.registerWith(registrar);
   ImagePickerPlugin.registerWith(registrar);
   MobileScannerWeb.registerWith(registrar);

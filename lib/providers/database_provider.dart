@@ -10,6 +10,8 @@ import 'package:fina/providers/settings_provider.dart';
 import 'package:flutter/foundation.dart';
 import '../services/notification_service.dart';
 import '../services/local_ai_engine.dart';
+import '../services/streak_service.dart';
+import 'streak_provider.dart';
 
 final databaseServiceProvider = Provider((ref) => DatabaseService.instance);
 
@@ -107,6 +109,10 @@ class TransactionsNotifier extends StateNotifier<List<Transaction>> {
     final id = await _dbService.createTransaction(tx);
     await loadTransactions();
     await _ref.read(settingsProvider.notifier).revealInsight();
+    
+    // Update streak
+    final newStreak = await StreakService.recordActivity();
+    _ref.read(streakProvider.notifier).state = newStreak;
 
     // Smart Alerts Logic
     final settings = _ref.read(settingsProvider);

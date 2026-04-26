@@ -4,8 +4,6 @@ import 'main_screen.dart';
 import '../theme/colors.dart';
 import '../services/notification_service.dart';
 
-import 'package:flutter_native_splash/flutter_native_splash.dart';
-
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -21,8 +19,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   @override
   void initState() {
     super.initState();
-    // Remove native splash when Flutter UI starts rendering
-    FlutterNativeSplash.remove();
 
     // Request notification permissions early
     _requestNotificationPermissions();

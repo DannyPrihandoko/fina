@@ -7,12 +7,18 @@ import 'package:fina/services/notification_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fina/providers/settings_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:firebase_core/firebase_core.dart';
 
+import 'package:fina/services/streak_service.dart';
+
 void main() async {
-  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
-  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  try {
+    await StreakService.init();
+  } catch (e) {
+    debugPrint('StreakService initialization failed: $e');
+  }
   
   try {
     await Firebase.initializeApp();
