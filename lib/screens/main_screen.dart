@@ -25,19 +25,9 @@ class MainScreen extends ConsumerWidget {
     final selectedIndex = ref.watch(navigationProvider);
 
     return Scaffold(
-      body: Stack(
-        children: List.generate(_screens.length, (index) {
-          final isActive = index == selectedIndex;
-          return IgnorePointer(
-            ignoring: !isActive,
-            child: AnimatedOpacity(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-              opacity: isActive ? 1.0 : 0.0,
-              child: _screens[index],
-            ),
-          );
-        }),
+      body: IndexedStack(
+        index: selectedIndex,
+        children: _screens,
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(

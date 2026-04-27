@@ -11,19 +11,22 @@ import 'package:flutter/foundation.dart';
 import '../services/notification_service.dart';
 import '../services/local_ai_engine.dart';
 import '../services/streak_service.dart';
+import '../services/cloud_sync_service.dart';
+import '../services/auth_service.dart';
 import 'streak_provider.dart';
 
 final databaseServiceProvider = Provider((ref) => DatabaseService.instance);
 
 // BUDGETS PROVIDER
 final budgetsProvider = StateNotifierProvider<BudgetsNotifier, List<Budget>>((ref) {
-  return BudgetsNotifier(ref.watch(databaseServiceProvider));
+  return BudgetsNotifier(ref.watch(databaseServiceProvider), ref);
 });
 
 class BudgetsNotifier extends StateNotifier<List<Budget>> {
   final DatabaseService _dbService;
+  final Ref _ref;
 
-  BudgetsNotifier(this._dbService) : super([]) {
+  BudgetsNotifier(this._dbService, this._ref) : super([]) {
     loadBudgets();
   }
 
@@ -35,11 +38,13 @@ class BudgetsNotifier extends StateNotifier<List<Budget>> {
     final budget = Budget(category: category, limitAmount: amount);
     await _dbService.saveBudget(budget);
     await loadBudgets();
+    _triggerBackup(_ref);
   }
 
   Future<void> removeBudget(int id) async {
     await _dbService.deleteBudget(id);
     await loadBudgets();
+    _triggerBackup(_ref);
   }
 }
 
@@ -75,16 +80,19 @@ class WalletsNotifier extends StateNotifier<List<Wallet>> {
       );
       await _ref.read(transactionsProvider.notifier).addTransaction(initialTx);
     }
+    _triggerBackup(_ref);
   }
 
   Future<void> removeWallet(int id) async {
     await _dbService.deleteWallet(id);
     await loadWallets();
+    _triggerBackup(_ref);
   }
 
   Future<void> updateWallet(Wallet wallet) async {
     await _dbService.updateWallet(wallet);
     await loadWallets();
+    _triggerBackup(_ref);
   }
 }
 
@@ -130,11 +138,13 @@ class TransactionsNotifier extends StateNotifier<List<Transaction>> {
         );
       }
     }
+    _triggerBackup(_ref);
   }
 
   Future<void> removeTransaction(int id) async {
     await _dbService.deleteTransaction(id);
     await loadTransactions();
+    _triggerBackup(_ref);
   }
 }
 
@@ -181,7 +191,7 @@ class BillsNotifier extends StateNotifier<List<Bill>> {
       final updatedBill = bill.copyWith(id: id);
       await NotificationService().scheduleBillReminders(updatedBill);
     }
-    
+    _triggerBackup(_ref);
     return id;
   }
 
@@ -194,12 +204,14 @@ class BillsNotifier extends StateNotifier<List<Bill>> {
     if (settings.isNotificationsEnabled) {
       await NotificationService().scheduleBillReminders(bill);
     }
+    _triggerBackup(_ref);
   }
 
   Future<void> removeBill(int id) async {
     await _dbService.deleteBill(id);
     await NotificationService().cancelBillReminders(id);
     await loadBills();
+    _triggerBackup(_ref);
   }
 
   Future<void> payBill(Bill bill, int walletId) async {
@@ -217,6 +229,7 @@ class BillsNotifier extends StateNotifier<List<Bill>> {
 
     await _ref.read(transactionsProvider.notifier).addTransaction(transaction);
     await loadBills();
+    _triggerBackup(_ref);
   }
 }
 
@@ -252,13 +265,14 @@ final totalNetWorthProvider = Provider((ref) {
 
 // GOALS PROVIDER
 final goalsProvider = StateNotifierProvider<GoalsNotifier, List<FinancialGoal>>((ref) {
-  return GoalsNotifier(ref.watch(databaseServiceProvider));
+  return GoalsNotifier(ref.watch(databaseServiceProvider), ref);
 });
 
 class GoalsNotifier extends StateNotifier<List<FinancialGoal>> {
   final DatabaseService _dbService;
+  final Ref _ref;
 
-  GoalsNotifier(this._dbService) : super([]) {
+  GoalsNotifier(this._dbService, this._ref) : super([]) {
     loadGoals();
   }
 
@@ -269,22 +283,53 @@ class GoalsNotifier extends StateNotifier<List<FinancialGoal>> {
   Future<int> addGoal(FinancialGoal goal) async {
     final id = await _dbService.createGoal(goal);
     await loadGoals();
+    _triggerBackup(_ref);
     return id;
   }
 
   Future<void> updateGoal(FinancialGoal goal) async {
     await _dbService.updateGoal(goal);
     await loadGoals();
+    _triggerBackup(_ref);
   }
 
   Future<void> removeGoal(int id) async {
     await _dbService.deleteGoal(id);
     await loadGoals();
+    _triggerBackup(_ref);
   }
 
   Future<void> addSavings(FinancialGoal goal, double amount) async {
     final updated = goal.copyWith(savedAmount: goal.savedAmount + amount);
     await _dbService.updateGoal(updated);
     await loadGoals();
+    _triggerBackup(_ref);
   }
+}
+
+// ─── Backup Helper ───────────────────────────────────────────────────────────
+/// Triggers a background cloud backup if the user is signed in with Google.
+void _triggerBackup(Ref ref) {
+  final user = AuthService().currentUser;
+  if (user == null || user.isAnonymous) return;
+
+  // Run async in background - don't block the UI
+  Future.microtask(() async {
+    try {
+      final db = DatabaseService.instance;
+      final settings = ref.read(settingsProvider);
+      await CloudSyncService().backupAll(
+        uid: user.uid,
+        transactions: await db.getAllTransactions(),
+        wallets: await db.getAllWallets(),
+        bills: await db.getAllBills(),
+        budgets: await db.getAllBudgets(),
+        goals: await db.getAllGoals(),
+        userName: settings.userName,
+        photoUrl: user.photoURL,
+      );
+    } catch (e) {
+      debugPrint('BackupHelper: Backup failed: $e');
+    }
+  });
 }

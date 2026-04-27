@@ -798,10 +798,10 @@ class _SmartTransactionBubbleState extends State<_SmartTransactionBubble> {
         width: _isExpanded ? 180 : 56,
         decoration: BoxDecoration(
           color: AppColors.ctaAqua,
-          borderRadius: BorderRadius.circular(_isExpanded ? 28 : 28),
+          borderRadius: BorderRadius.circular(28),
           boxShadow: [
             BoxShadow(
-              color: AppColors.ctaAqua.withValues(alpha: 0.3),
+              color: AppColors.ctaAqua.withOpacity(0.3),
               blurRadius: 12,
               offset: const Offset(0, 6),
             ),
@@ -813,12 +813,11 @@ class _SmartTransactionBubbleState extends State<_SmartTransactionBubble> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const SizedBox(width: 14), // Padding to center the initial icon
+              const SizedBox(width: 14),
               const Icon(Icons.add_rounded, color: AppColors.textDarkBlue, size: 28),
-            if (_isExpanded) ...[
-              const SizedBox(width: 8),
-              Flexible(
-                child: AnimatedOpacity(
+              if (_isExpanded) ...[
+                const SizedBox(width: 8),
+                AnimatedOpacity(
                   duration: const Duration(milliseconds: 200),
                   opacity: _isExpanded ? 1 : 0,
                   child: const Text(
@@ -830,16 +829,15 @@ class _SmartTransactionBubbleState extends State<_SmartTransactionBubble> {
                       letterSpacing: 0.5,
                     ),
                     maxLines: 1,
-                    overflow: TextOverflow.clip,
+                    softWrap: false,
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
+                const SizedBox(width: 12),
+              ],
             ],
-          ],
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 }

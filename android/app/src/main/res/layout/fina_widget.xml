@@ -28,19 +28,10 @@
             android:layout_height="wrap_content"
             android:text="Waktunya isi Fina!"
             android:textColor="#333333"
-            android:textSize="12sp"
+            android:textSize="14sp"
             android:textStyle="bold"
             android:maxLines="2"
             android:ellipsize="end" />
-
-        <TextView
-            android:id="@+id/widget_subtitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Streak: 0 Hari"
-            android:textColor="#666666"
-            android:textSize="10sp"
-            android:layout_marginTop="2dp" />
     </LinearLayout>
 
 </LinearLayout>

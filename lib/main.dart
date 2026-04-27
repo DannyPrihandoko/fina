@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fina/screens/splash_screen.dart';
 import 'package:fina/theme/app_theme.dart';
@@ -6,6 +7,7 @@ import 'package:fina/services/notification_service.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fina/providers/settings_provider.dart';
+import 'package:fina/providers/auth_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_core/firebase_core.dart';
 
@@ -15,19 +17,24 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   try {
-    await StreakService.init();
+    if (!kIsWeb) {
+      await StreakService.init();
+    }
   } catch (e) {
     debugPrint('StreakService initialization failed: $e');
   }
   
   try {
+    // Di Web, Firebase butuh konfigurasi khusus. Jika belum ada, kita skip dulu agar tidak crash.
     await Firebase.initializeApp();
   } catch (e) {
     debugPrint('Firebase initialization failed: $e');
   }
   
   try {
-    await NotificationService().init();
+    if (!kIsWeb) {
+      await NotificationService().init();
+    }
   } catch (e) {
     debugPrint('Notification initialization failed: $e');
   }

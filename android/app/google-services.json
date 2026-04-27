@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "950683922466",
+    "firebase_url": "https://fina-finance-20d86-default-rtdb.firebaseio.com",
     "project_id": "fina-finance-20d86",
     "storage_bucket": "fina-finance-20d86.firebasestorage.app"
   },
@@ -9,10 +10,23 @@
       "client_info": {
         "mobilesdk_app_id": "1:950683922466:android:7c1d711d6a801619cc5a7b",
         "android_client_info": {
-          "package_name": "fina.finance"
+          "package_name": "com.fina.finance"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "950683922466-m5l920riqqpav4mkfhsgcqilnllv4ofh.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.fina.finance",
+            "certificate_hash": "f46cc56d1983dfa1cb3dd2fe8842af041f699b85"
+          }
+        },
+        {
+          "client_id": "950683922466-psqrm6shpqeo71qf1b3kt7j100c9utld.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyC4VsGtWwUSW1YJxsrkdvT7jGkMFfA__FE"
@@ -20,7 +34,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "950683922466-psqrm6shpqeo71qf1b3kt7j100c9utld.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

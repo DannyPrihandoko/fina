@@ -3,6 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'main_screen.dart';
 import '../theme/colors.dart';
 import '../services/notification_service.dart';
+import '../services/auth_service.dart';
+import '../services/cloud_sync_service.dart';
+import '../services/database_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -38,10 +41,55 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   }
 
   Future<void> _requestNotificationPermissions() async {
-    await NotificationService().requestPermissions();
+    try {
+      await NotificationService().requestPermissions();
+    } catch (e) {
+      debugPrint('SplashScreen: Notification permission request failed: $e');
+    }
     
-    // Navigate after a delay regardless of permission result
+    try {
+      await _checkAndAutoSync();
+    } catch (e) {
+      debugPrint('SplashScreen: Auto-sync failed: $e');
+    }
+
     _navigateToHome();
+  }
+
+  Future<void> _checkAndAutoSync() async {
+    try {
+      final user = AuthService().currentUser;
+      if (user == null || user.isAnonymous) return;
+
+      final db = DatabaseService.instance;
+      final localTx = await db.getAllTransactions();
+
+      // If local DB is empty but user is signed in, auto-restore from cloud
+      if (localTx.isEmpty) {
+        final hasCloud = await CloudSyncService().isCloudDataAvailable(user.uid);
+        if (!hasCloud) return;
+
+        final result = await CloudSyncService().restoreAll(user.uid);
+        if (result == null) return;
+
+        final database = await db.database;
+        await database.delete('transactions');
+        await database.delete('wallets');
+        await database.delete('bills');
+        await database.delete('budgets');
+        await database.delete('financial_goals');
+
+        for (final w in result.wallets) { await db.createWallet(w); }
+        for (final t in result.transactions) { await db.createTransaction(t); }
+        for (final b in result.bills) { await db.createBill(b); }
+        for (final bg in result.budgets) { await db.saveBudget(bg); }
+        for (final g in result.goals) { await db.createGoal(g); }
+
+        debugPrint('SplashScreen: Auto-restore completed from cloud.');
+      }
+    } catch (e) {
+      debugPrint('SplashScreen: Auto-sync error: $e');
+    }
   }
 
   void _navigateToHome() {

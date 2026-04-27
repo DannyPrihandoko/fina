@@ -2,9 +2,15 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import '../theme/colors.dart';
 import '../services/notification_service.dart';
+import '../services/auth_service.dart';
+import '../services/cloud_sync_service.dart';
+import '../services/database_service.dart';
 import '../providers/settings_provider.dart';
+import '../providers/auth_provider.dart';
+import '../providers/database_provider.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -72,10 +78,183 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
+  Future<void> _signInWithGoogle(WidgetRef ref, BuildContext context) async {
+    final user = await AuthService().signInWithGoogle();
+    if (!context.mounted) return;
+    if (user != null) {
+      // Check if cloud has data
+      final hasCloud = await CloudSyncService().isCloudDataAvailable(user.uid);
+      if (!context.mounted) return;
+      if (hasCloud) {
+        final shouldRestore = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            title: const Text('Data Cloud Ditemukan', style: TextStyle(fontWeight: FontWeight.w900)),
+            content: const Text(
+              'Kami menemukan data tersimpan di cloud milik akun ini.\n\n'
+              'Apakah kamu ingin memulihkan data cloud? Data lokal saat ini akan diganti.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('BIARKAN LOKAL'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('PULIHKAN CLOUD'),
+              ),
+            ],
+          ),
+        );
+
+        if (shouldRestore == true && context.mounted) {
+          await _restoreFromCloud(ref, context, user.uid);
+        }
+      } else {
+        // No cloud data: push local data to cloud
+        await _backupNow(ref, context, silent: true);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Login berhasil! Data lokal telah disimpan ke cloud. ☁️')),
+          );
+        }
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Login dibatalkan atau gagal.')),
+      );
+    }
+  }
+
+  Future<void> _signOut(WidgetRef ref, BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Text('Keluar dari Akun?', style: TextStyle(fontWeight: FontWeight.w900)),
+        content: const Text('Data kamu tetap tersimpan di cloud. Kamu bisa login kembali kapan saja untuk memulihkannya.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('BATAL')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('KELUAR')),
+        ],
+      ),
+    );
+    if (confirm == true) {
+      await AuthService().signOut();
+    }
+  }
+
+  Future<void> _backupNow(WidgetRef ref, BuildContext context, {bool silent = false}) async {
+    final user = AuthService().currentUser;
+    if (user == null || user.isAnonymous) return;
+
+    try {
+      final db = DatabaseService.instance;
+      final settings = ref.read(settingsProvider);
+      await CloudSyncService().backupAll(
+        uid: user.uid,
+        transactions: await db.getAllTransactions(),
+        wallets: await db.getAllWallets(),
+        bills: await db.getAllBills(),
+        budgets: await db.getAllBudgets(),
+        goals: await db.getAllGoals(),
+        userName: settings.userName,
+        photoUrl: user.photoURL,
+      );
+      if (!silent && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('✅ Backup ke cloud berhasil!')),
+        );
+      }
+    } catch (e) {
+      if (!silent && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('❌ Backup gagal: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _restoreFromCloud(WidgetRef ref, BuildContext context, String uid) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final result = await CloudSyncService().restoreAll(uid);
+      if (!context.mounted) return;
+      Navigator.pop(context); // close loading
+
+      if (result == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('❌ Gagal memulihkan data dari cloud.')),
+        );
+        return;
+      }
+
+      final db = DatabaseService.instance;
+      final database = await db.database;
+
+      // Wipe local tables
+      await database.delete('transactions');
+      await database.delete('wallets');
+      await database.delete('bills');
+      await database.delete('budgets');
+      await database.delete('financial_goals');
+
+      // Re-insert from cloud
+      for (final w in result.wallets) {
+        await db.createWallet(w);
+      }
+      for (final t in result.transactions) {
+        await db.createTransaction(t);
+      }
+      for (final b in result.bills) {
+        await db.createBill(b);
+      }
+      for (final bg in result.budgets) {
+        await db.saveBudget(bg);
+      }
+      for (final g in result.goals) {
+        await db.createGoal(g);
+      }
+
+      // Refresh all providers
+      ref.invalidate(transactionsProvider);
+      ref.invalidate(walletsProvider);
+      ref.invalidate(billsProvider);
+      ref.invalidate(budgetsProvider);
+      ref.invalidate(goalsProvider);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ Data berhasil dipulihkan! '
+                '${result.transactions.length} transaksi, '
+                '${result.wallets.length} dompet.'),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('❌ Restore gagal: $e')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
     final notificationsEnabled = settings.isNotificationsEnabled;
+    final authState = ref.watch(authStateProvider);
+    final currentUser = authState.valueOrNull;
+    final isGoogleSignedIn = currentUser != null && !(currentUser.isAnonymous);
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -97,8 +276,7 @@ class SettingsScreen extends ConsumerWidget {
             sliver: SliverToBoxAdapter(
               child: Column(
                 children: [
-                  // Profile Header (Excluvise Look)
-                  _buildProfileHeader(context, ref),
+                  _buildProfileHeader(context, ref, isGoogleSignedIn, currentUser),
                   const SizedBox(height: 32),
                 ],
               ),
@@ -111,6 +289,46 @@ class SettingsScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+
+                  // ─── AKUN & DATA Section ───────────────────────────────
+                  _buildSectionLabel(context, 'AKUN & DATA'),
+                  const SizedBox(height: 16),
+                  _buildSettingsGroup(context, [
+                    if (!isGoogleSignedIn) ...[
+                      _buildGoogleSignInButton(context, ref),
+                    ] else ...[
+                      _buildSettingsItem(
+                        context,
+                        icon: Icons.cloud_upload_rounded,
+                        iconColor: Colors.blue,
+                        title: 'Backup ke Cloud',
+                        subtitle: 'Simpan semua data ke Google Cloud',
+                        onTap: () => _backupNow(ref, context),
+                      ),
+                      _buildSettingsItem(
+                        context,
+                        icon: Icons.cloud_download_rounded,
+                        iconColor: Colors.green,
+                        title: 'Pulihkan dari Cloud',
+                        subtitle: 'Ganti data lokal dengan data cloud',
+                        onTap: () async {
+                          final user = AuthService().currentUser;
+                          if (user != null) await _restoreFromCloud(ref, context, user.uid);
+                        },
+                      ),
+                      _buildLastSyncTile(context, currentUser!.uid),
+                      _buildSettingsItem(
+                        context,
+                        icon: Icons.logout_rounded,
+                        iconColor: Colors.red,
+                        title: 'Keluar dari Akun Google',
+                        onTap: () => _signOut(ref, context),
+                      ),
+                    ],
+                  ]),
+
+                  const SizedBox(height: 32),
+
                   _buildSectionLabel(context, 'NOTIFIKASI'),
                   const SizedBox(height: 16),
                   _buildSettingsGroup(
@@ -217,10 +435,14 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildProfileHeader(BuildContext context, WidgetRef ref) {
+  Widget _buildProfileHeader(BuildContext context, WidgetRef ref, bool isGoogleSignedIn, user) {
     final settings = ref.watch(settingsProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
+    final String displayName = isGoogleSignedIn ? (user?.displayName ?? settings.userName) : settings.userName;
+    final String? photoUrl = isGoogleSignedIn ? user?.photoURL : null;
+    final String? localPhoto = isGoogleSignedIn ? null : settings.profilePhotoPath;
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -238,7 +460,7 @@ class SettingsScreen extends ConsumerWidget {
       child: Row(
         children: [
           GestureDetector(
-            onTap: () => _pickImage(ref),
+            onTap: isGoogleSignedIn ? null : () => _pickImage(ref),
             child: Container(
               width: 70,
               height: 70,
@@ -246,15 +468,15 @@ class SettingsScreen extends ConsumerWidget {
                 color: isDark ? AppColors.darkBackground : AppColors.white,
                 shape: BoxShape.circle,
                 border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.borderColor, width: 2),
-                image: settings.profilePhotoPath != null
-                    ? DecorationImage(
-                        image: FileImage(File(settings.profilePhotoPath!)),
-                        fit: BoxFit.cover,
-                      )
-                    : null,
+                image: photoUrl != null
+                    ? DecorationImage(image: NetworkImage(photoUrl), fit: BoxFit.cover)
+                    : localPhoto != null
+                        ? DecorationImage(image: FileImage(File(localPhoto)), fit: BoxFit.cover)
+                        : null,
               ),
-              child: settings.profilePhotoPath == null
-                  ? Icon(Icons.person_rounded, color: Theme.of(context).textTheme.bodyLarge?.color, size: 40)
+              child: (photoUrl == null && localPhoto == null)
+                  ? Icon(isGoogleSignedIn ? Icons.account_circle_rounded : Icons.person_rounded,
+                      color: Theme.of(context).textTheme.bodyLarge?.color, size: 40)
                   : null,
             ),
           ),
@@ -264,30 +486,108 @@ class SettingsScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  settings.userName,
-                  style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color, fontSize: 22, fontWeight: FontWeight.w900),
+                  displayName,
+                  style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color, fontSize: 20, fontWeight: FontWeight.w900),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.secondary,
-                    borderRadius: BorderRadius.circular(20),
+                if (isGoogleSignedIn) ...[
+                  Text(
+                    user?.email ?? '',
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5), fontSize: 11),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  child: Text(
-                    'FINA PREMIUM',
-                    style: TextStyle(color: Theme.of(context).colorScheme.onSecondary, fontSize: 8, fontWeight: FontWeight.w900, letterSpacing: 1),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.green.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.cloud_done_rounded, size: 12, color: Colors.green),
+                            const SizedBox(width: 4),
+                            const Text('Cloud Aktif', style: TextStyle(color: Colors.green, fontSize: 10, fontWeight: FontWeight.w700)),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                ),
+                ] else ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.secondary,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      'FINA PREMIUM',
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSecondary, fontSize: 8, fontWeight: FontWeight.w900, letterSpacing: 1),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
-          IconButton(
-            onPressed: () => _editName(ref, context, settings.userName),
-            icon: Icon(Icons.edit_note_rounded, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5), size: 28),
-          ),
+          if (!isGoogleSignedIn)
+            IconButton(
+              onPressed: () => _editName(ref, context, settings.userName),
+              icon: Icon(Icons.edit_note_rounded, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5), size: 28),
+            ),
         ],
       ),
+    );
+  }
+
+  Widget _buildGoogleSignInButton(BuildContext context, WidgetRef ref) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      leading: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: Colors.red.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: const Icon(Icons.g_mobiledata_rounded, color: Colors.red, size: 26),
+      ),
+      title: const Text('Masuk dengan Google', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14)),
+      subtitle: Text('Simpan data kamu secara otomatis di cloud',
+          style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4))),
+      trailing: Icon(Icons.chevron_right_rounded, color: Theme.of(context).dividerColor),
+      onTap: () => _signInWithGoogle(ref, context),
+    );
+  }
+
+  Widget _buildLastSyncTile(BuildContext context, String uid) {
+    return FutureBuilder<DateTime?>(
+      future: CloudSyncService().getLastSyncTime(uid),
+      builder: (context, snapshot) {
+        final lastSync = snapshot.data;
+        final text = lastSync != null
+            ? 'Terakhir sync: ${DateFormat('dd MMM yyyy, HH:mm').format(lastSync.toLocal())}'
+            : 'Belum pernah sync';
+        return ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+          leading: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.grey.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(Icons.access_time_rounded, color: Colors.grey.shade600, size: 22),
+          ),
+          title: Text(text,
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
+        );
+      },
     );
   }
 
@@ -327,10 +627,10 @@ class SettingsScreen extends ConsumerWidget {
     required IconData icon,
     required Color iconColor,
     required String title,
+    String? subtitle,
     String? trailingText,
     VoidCallback? onTap,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return ListTile(
       onTap: onTap,
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -343,6 +643,9 @@ class SettingsScreen extends ConsumerWidget {
         child: Icon(icon, color: iconColor, size: 22),
       ),
       title: Text(title, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Theme.of(context).textTheme.bodyLarge?.color)),
+      subtitle: subtitle != null
+          ? Text(subtitle, style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)))
+          : null,
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -364,7 +667,6 @@ class SettingsScreen extends ConsumerWidget {
     required bool value,
     required Function(bool) onChanged,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       leading: Container(

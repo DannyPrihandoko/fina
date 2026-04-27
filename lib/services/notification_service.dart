@@ -15,6 +15,8 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin _notificationsPlugin = FlutterLocalNotificationsPlugin();
 
   Future<void> init() async {
+    if (kIsWeb) return; // Notifikasi lokal belum didukung di web melalui plugin ini
+
     tz.initializeTimeZones();
     final String timeZoneName = (await FlutterTimezone.getLocalTimezone()).identifier;
     tz.setLocalLocation(tz.getLocation(timeZoneName));
@@ -41,7 +43,7 @@ class NotificationService {
     );
 
     // Create default channels for Android
-    if (Platform.isAndroid) {
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
       final androidPlugin = _notificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
       
       // 1. Bill Reminder Channel
@@ -83,7 +85,9 @@ class NotificationService {
   }
 
   Future<bool> requestPermissions() async {
-    if (Platform.isIOS) {
+    if (kIsWeb) return false;
+
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
       final bool? result = await _notificationsPlugin
           .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
           ?.requestPermissions(
@@ -92,7 +96,7 @@ class NotificationService {
             sound: true,
           );
       return result ?? false;
-    } else if (Platform.isAndroid) {
+    } else if (defaultTargetPlatform == TargetPlatform.android) {
       final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
           _notificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
       
@@ -100,12 +104,11 @@ class NotificationService {
       final bool? granted = await androidImplementation?.requestNotificationsPermission();
       
       // Also request exact alarm permission if needed (Android 12+)
-      // Note: requestExactAlarmsPermission() is available in newer versions of the plugin
       bool exactGranted = true;
       try {
         exactGranted = await androidImplementation?.requestExactAlarmsPermission() ?? true;
       } catch (e) {
-        // Fallback for older plugin versions
+        // Fallback
       }
 
       return (granted ?? false) && exactGranted;
@@ -238,7 +241,9 @@ class NotificationService {
   }
 
   Future<bool> isNotificationsEnabled() async {
-    if (Platform.isIOS) {
+    if (kIsWeb) return false;
+
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
       final bool? result = await _notificationsPlugin
           .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
           ?.requestPermissions(
@@ -247,7 +252,7 @@ class NotificationService {
             sound: false,
           );
       return result ?? false;
-    } else if (Platform.isAndroid) {
+    } else if (defaultTargetPlatform == TargetPlatform.android) {
       final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
           _notificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
       
