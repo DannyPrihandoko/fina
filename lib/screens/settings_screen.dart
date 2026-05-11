@@ -11,6 +11,7 @@ import '../services/database_service.dart';
 import '../providers/settings_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/database_provider.dart';
+import '../widgets/success_modal.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -22,8 +23,10 @@ class SettingsScreen extends ConsumerWidget {
       if (granted) {
         await ref.read(settingsProvider.notifier).setNotificationsEnabled(true);
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Notifikasi diaktifkan!')),
+          SuccessModal.show(
+            context: context,
+            title: 'Notifikasi Aktif!',
+            subtitle: 'Anda akan menerima pengingat tagihan dan alert keuangan.',
           );
         }
       } else {
@@ -72,6 +75,11 @@ class SettingsScreen extends ConsumerWidget {
               if (newName.isNotEmpty) {
                 ref.read(settingsProvider.notifier).setUserName(newName);
                 Navigator.pop(context);
+                SuccessModal.show(
+                  context: context,
+                  title: 'Nama Diperbarui!',
+                  subtitle: 'Nama profil Anda telah berhasil diubah menjadi $newName.',
+                );
               }
             },
             child: const Text('SIMPAN'),
@@ -127,10 +135,10 @@ class SettingsScreen extends ConsumerWidget {
         // No cloud data: push local data to cloud
         await _backupNow(ref, context, silent: true);
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content: Text(
-                    'Login berhasil! Data lokal telah disimpan ke cloud. ☁️')),
+          SuccessModal.show(
+            context: context,
+            title: 'Login Berhasil!',
+            subtitle: 'Akun Google terhubung dan data lokal telah aman disimpan ke cloud.',
           );
         }
       }
@@ -244,9 +252,10 @@ class SettingsScreen extends ConsumerWidget {
     if (selectedCode == null || selectedCode == currentCode) return;
     await ref.read(settingsProvider.notifier).setLanguageCode(selectedCode);
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text('Bahasa diubah ke ${_languageLabel(selectedCode)}.')),
+      SuccessModal.show(
+        context: context,
+        title: 'Bahasa Diubah!',
+        subtitle: 'Aplikasi sekarang menggunakan ${_languageLabel(selectedCode)}.',
       );
     }
   }
@@ -350,8 +359,10 @@ class SettingsScreen extends ConsumerWidget {
         photoUrl: user.photoURL,
       );
       if (!silent && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('✅ Backup ke cloud berhasil!')),
+        SuccessModal.show(
+          context: context,
+          title: 'Backup Berhasil!',
+          subtitle: 'Seluruh data Anda telah aman dicadangkan ke Google Cloud.',
         );
       }
     } catch (e) {
@@ -418,12 +429,10 @@ class SettingsScreen extends ConsumerWidget {
       ref.invalidate(goalsProvider);
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('✅ Data berhasil dipulihkan! '
-                '${result.transactions.length} transaksi, '
-                '${result.wallets.length} dompet.'),
-          ),
+        SuccessModal.show(
+          context: context,
+          title: 'Restore Berhasil!',
+          subtitle: 'Data dari cloud telah dipulihkan. ${result.transactions.length} transaksi dan ${result.wallets.length} dompet siap digunakan.',
         );
       }
     } catch (e) {

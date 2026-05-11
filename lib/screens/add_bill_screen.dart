@@ -5,6 +5,7 @@ import '../models/bill.dart';
 import '../providers/database_provider.dart';
 import '../services/notification_service.dart';
 import '../utils/currency_formatter.dart';
+import '../widgets/success_modal.dart';
 
 class AddBillScreen extends ConsumerStatefulWidget {
   final Bill? existingBill;
@@ -110,106 +111,19 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
       }
 
       if (mounted) {
-        _showSuccessDialog(context, isEditing ? 'Data Berhasil Disimpan!' : 'Tagihan Berhasil Dijadwalkan!');
+        SuccessModal.show(
+          context: context,
+          title: isEditing ? 'Data Berhasil Disimpan!' : 'Tagihan Berhasil Dijadwalkan!',
+          subtitle: isEditing 
+              ? 'Data tagihan Anda telah diperbarui ke sistem.'
+              : 'Data tagihan Anda telah berhasil disimpan.',
+          onConfirm: () => Navigator.of(context).pop(isEditing ? 'update' : 'add'),
+        );
       }
     }
   }
 
-  void _showSuccessDialog(BuildContext context, String message) {
-    final isUpdate = message.toLowerCase().contains('update') || 
-                     message.toLowerCase().contains('perubahan') || 
-                     message.toLowerCase().contains('simpan');
-    
-    final subtitle = isUpdate
-        ? 'Data tagihan Anda telah diperbarui ke sistem.'
-        : 'Data tagihan Anda telah berhasil disimpan.';
 
-    showGeneralDialog(
-      context: context,
-      barrierDismissible: false,
-      barrierLabel: 'Success Dialog',
-      barrierColor: Colors.black54,
-      transitionDuration: const Duration(milliseconds: 300),
-      pageBuilder: (ctx, anim1, anim2) => Container(),
-      transitionBuilder: (ctx, anim1, anim2, child) {
-        final curvedAnim = CurvedAnimation(parent: anim1, curve: Curves.easeOutBack);
-        return ScaleTransition(
-          scale: curvedAnim,
-          child: FadeTransition(
-            opacity: anim1,
-            child: Dialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-              backgroundColor: Theme.of(context).cardTheme.color,
-              elevation: 20,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Theme.of(context).colorScheme.secondary.withOpacity(0.2),
-                            Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                          ],
-                        ),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.check_circle_rounded,
-                        color: Theme.of(context).colorScheme.secondary,
-                        size: 56,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      message,
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w900,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      subtitle,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                        fontSize: 14,
-                        height: 1.4,
-                      ),
-                    ),
-                    const SizedBox(height: 28),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.of(ctx).pop(); // Close dialog
-                          Navigator.of(context).pop(isUpdate ? 'update' : 'add'); // Go back to bills screen
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(context).colorScheme.primary,
-                          foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          elevation: 4,
-                        ),
-                        child: const Text('OK', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15, letterSpacing: 1)),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
 
   @override
   Widget build(BuildContext context) {

@@ -6,6 +6,7 @@ import 'package:fina/screens/share_data_screen.dart';
 import 'package:fina/screens/shared_detail_screen.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../widgets/success_modal.dart';
 
 class ConnectionsScreen extends ConsumerStatefulWidget {
   const ConnectionsScreen({super.key});
@@ -15,109 +16,7 @@ class ConnectionsScreen extends ConsumerStatefulWidget {
 }
 
 class _ConnectionsScreenState extends ConsumerState<ConnectionsScreen> {
-  void _showSuccessDialog(String message) {
-    if (!mounted) return;
-    
-    const subtitle = 'Hubungan baru Anda telah berhasil didaftarkan dan data akan disinkronkan.';
 
-    showGeneralDialog(
-      context: context,
-      barrierDismissible: true,
-      barrierLabel: 'Success Dialog',
-      barrierColor: Colors.black54,
-      transitionDuration: const Duration(milliseconds: 300),
-      pageBuilder: (ctx, anim1, anim2) {
-        return Container();
-      },
-      transitionBuilder: (ctx, anim1, anim2, child) {
-        final curvedAnim = CurvedAnimation(parent: anim1, curve: Curves.easeOutBack);
-        return ScaleTransition(
-          scale: curvedAnim,
-          child: FadeTransition(
-            opacity: anim1,
-            child: Dialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-              backgroundColor: Theme.of(ctx).cardTheme.color,
-              elevation: 20,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Animated check icon
-                    TweenAnimationBuilder<double>(
-                      tween: Tween(begin: 0.0, end: 1.0),
-                      duration: const Duration(milliseconds: 600),
-                      curve: Curves.elasticOut,
-                      builder: (context, value, child) {
-                        return Transform.scale(
-                          scale: value,
-                          child: child,
-                        );
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              Theme.of(ctx).colorScheme.secondary.withOpacity(0.2),
-                              Theme.of(ctx).colorScheme.primary.withOpacity(0.1),
-                            ],
-                          ),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.check_circle_rounded,
-                          color: Theme.of(ctx).colorScheme.secondary,
-                          size: 56,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      message,
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w900,
-                        color: Theme.of(ctx).colorScheme.onSurface,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      subtitle,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Theme.of(ctx).colorScheme.onSurface.withOpacity(0.6),
-                        fontSize: 14,
-                        height: 1.4,
-                      ),
-                    ),
-                    const SizedBox(height: 28),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: ElevatedButton(
-                        onPressed: () => Navigator.of(ctx).pop(),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(ctx).colorScheme.primary,
-                          foregroundColor: Theme.of(ctx).colorScheme.onPrimary,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          elevation: 4,
-                          shadowColor: Theme.of(ctx).colorScheme.primary.withOpacity(0.3),
-                        ),
-                        child: const Text('OK', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15, letterSpacing: 1)),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -154,8 +53,12 @@ class _ConnectionsScreenState extends ConsumerState<ConnectionsScreen> {
             context,
             MaterialPageRoute(builder: (context) => const ShareDataScreen()),
           );
-          if (result == 'added') {
-            _showSuccessDialog('Hubungan Berhasil Ditambahkan!');
+          if (result == 'added' && mounted) {
+            SuccessModal.show(
+              context: context,
+              title: 'Hubungan Berhasil Ditambahkan!',
+              subtitle: 'Hubungan baru Anda telah berhasil didaftarkan dan data akan disinkronkan.',
+            );
           }
         },
         backgroundColor: Theme.of(context).colorScheme.secondary,

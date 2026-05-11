@@ -5,6 +5,7 @@ import '../providers/database_provider.dart';
 import '../models/transaction.dart';
 import '../models/wallet.dart';
 import '../utils/currency_formatter.dart';
+import '../widgets/success_modal.dart';
 
 class AddTransactionScreen extends ConsumerStatefulWidget {
   final double? initialAmount;
@@ -99,13 +100,12 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
       );
 
       ref.read(transactionsProvider.notifier).addTransaction(tx);
-      Navigator.pop(context);
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Transaksi berhasil disimpan!'),
-          backgroundColor: Theme.of(context).colorScheme.secondary,
-        ),
+      SuccessModal.show(
+        context: context,
+        title: 'Transaksi Berhasil!',
+        subtitle: 'Data transaksi Anda telah aman tercatat di sistem.',
+        onConfirm: () => Navigator.pop(context),
       );
     }
   }

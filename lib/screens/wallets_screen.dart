@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/database_provider.dart';
 import '../models/wallet.dart';
 import 'package:intl/intl.dart';
+import '../widgets/success_modal.dart';
 
 class WalletsScreen extends ConsumerWidget {
   const WalletsScreen({super.key});
@@ -432,7 +433,13 @@ class WalletsScreen extends ConsumerWidget {
                         feedbackMessage = 'Dompet Berhasil Dibuat!';
                       }
                       Navigator.pop(context); // Close bottom sheet
-                      _showSuccessFeedback(context, feedbackMessage);
+                      SuccessModal.show(
+                        context: context,
+                        title: feedbackMessage,
+                        subtitle: isEditing 
+                            ? 'Data dompet Anda telah diperbarui ke sistem.'
+                            : 'Dompet baru Anda telah berhasil didaftarkan.',
+                      );
                     }
                   },
                   style: ElevatedButton.styleFrom(
@@ -455,97 +462,5 @@ class WalletsScreen extends ConsumerWidget {
     );
   }
 
-  void _showSuccessFeedback(BuildContext context, String message) {
-    final isUpdate = message.toLowerCase().contains('update') || 
-                     message.toLowerCase().contains('perubahan') || 
-                     message.toLowerCase().contains('simpan');
-    
-    final subtitle = isUpdate
-        ? 'Data dompet Anda telah diperbarui ke sistem.'
-        : 'Dompet baru Anda telah berhasil didaftarkan.';
 
-    showGeneralDialog(
-      context: context,
-      barrierDismissible: false,
-      barrierLabel: 'Success Dialog',
-      barrierColor: Colors.black54,
-      transitionDuration: const Duration(milliseconds: 300),
-      pageBuilder: (ctx, anim1, anim2) => Container(),
-      transitionBuilder: (ctx, anim1, anim2, child) {
-        final curvedAnim = CurvedAnimation(parent: anim1, curve: Curves.easeOutBack);
-        return ScaleTransition(
-          scale: curvedAnim,
-          child: FadeTransition(
-            opacity: anim1,
-            child: Dialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-              backgroundColor: Theme.of(context).cardTheme.color,
-              elevation: 20,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Theme.of(context).colorScheme.secondary.withOpacity(0.2),
-                            Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                          ],
-                        ),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.check_circle_rounded,
-                        color: Theme.of(context).colorScheme.secondary,
-                        size: 56,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      message,
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w900,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      subtitle,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                        fontSize: 14,
-                        height: 1.4,
-                      ),
-                    ),
-                    const SizedBox(height: 28),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: ElevatedButton(
-                        onPressed: () => Navigator.of(ctx).pop(),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(context).colorScheme.primary,
-                          foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          elevation: 4,
-                          shadowColor: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-                        ),
-                        child: const Text('OK', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15, letterSpacing: 1)),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
 }

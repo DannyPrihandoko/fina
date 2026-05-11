@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/database_provider.dart';
 import '../models/financial_goal.dart';
 import '../theme/colors.dart';
+import '../widgets/success_modal.dart';
 
 class AddGoalScreen extends ConsumerStatefulWidget {
   final FinancialGoal? editGoal;
@@ -85,10 +86,24 @@ class _AddGoalScreenState extends ConsumerState<AddGoalScreen> {
 
     if (isEditing) {
       await ref.read(goalsProvider.notifier).updateGoal(goal);
-      if (mounted) Navigator.pop(context, 'updated');
+      if (mounted) {
+        SuccessModal.show(
+          context: context,
+          title: 'Target Diperbarui!',
+          subtitle: 'Perubahan pada target Anda telah berhasil disimpan.',
+          onConfirm: () => Navigator.pop(context, 'updated'),
+        );
+      }
     } else {
       await ref.read(goalsProvider.notifier).addGoal(goal);
-      if (mounted) Navigator.pop(context, 'added');
+      if (mounted) {
+        SuccessModal.show(
+          context: context,
+          title: 'Target Berhasil Dibuat!',
+          subtitle: 'Semangat! Target baru Anda telah terdaftar di sistem.',
+          onConfirm: () => Navigator.pop(context, 'added'),
+        );
+      }
     }
   }
 
