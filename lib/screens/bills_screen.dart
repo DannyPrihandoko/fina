@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../models/bill.dart';
 import '../providers/database_provider.dart';
-import '../theme/colors.dart';
 import '../services/notification_service.dart';
 import 'add_bill_screen.dart';
 import '../providers/navigation_provider.dart';

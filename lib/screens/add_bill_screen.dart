@@ -4,9 +4,7 @@ import 'package:intl/intl.dart';
 import '../models/bill.dart';
 import '../providers/database_provider.dart';
 import '../services/notification_service.dart';
-import '../theme/colors.dart';
 import '../utils/currency_formatter.dart';
-import 'bills_screen.dart';
 
 class AddBillScreen extends ConsumerStatefulWidget {
   final Bill? existingBill;

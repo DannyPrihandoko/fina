@@ -201,45 +201,98 @@ class _ConnectionsScreenState extends ConsumerState<ConnectionsScreen> {
   Widget _buildConnectionCard(BuildContext context, Connection connection, bool isDark) {
     final data = connection.lastData;
     final totalBalance = data?['recap']?['totalBalance'] ?? 0.0;
+    final isPending = connection.status == 'pending';
     
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Theme.of(context).dividerColor),
+        border: Border.all(
+          color: isPending 
+            ? (connection.isIncoming ? Theme.of(context).colorScheme.primary.withOpacity(0.3) : Theme.of(context).dividerColor)
+            : Theme.of(context).dividerColor,
+        ),
       ),
       child: ListTile(
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => SharedDetailScreen(connection: connection)),
-        ),
+        onTap: isPending 
+          ? null 
+          : () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => SharedDetailScreen(connection: connection)),
+            ),
         contentPadding: const EdgeInsets.all(16),
         leading: CircleAvatar(
-          backgroundColor: AppColors.ctaAqua.withOpacity(0.2),
-          child: const Icon(Icons.person_rounded, color: AppColors.ctaAqua),
+          backgroundColor: isPending 
+            ? Colors.grey.withOpacity(0.1) 
+            : AppColors.ctaAqua.withOpacity(0.2),
+          child: Icon(
+            isPending ? Icons.person_outline_rounded : Icons.person_rounded, 
+            color: isPending ? Colors.grey : AppColors.ctaAqua,
+          ),
         ),
-        title: Text(
-          connection.name,
-          style: TextStyle(fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onSurface),
-        ),
-        subtitle: Text(
-          data != null 
-              ? 'Terakhir update: ${DateFormat('dd MMM HH:mm').format(data['updatedAt'] is Timestamp ? (data['updatedAt'] as Timestamp).toDate() : DateTime.now())}'
-              : 'Belum ada data',
-          style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
-        ),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
+        title: Row(
           children: [
-            Text('SALDO', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5))),
-            Text(
-              NumberFormat.currency(locale: 'id', symbol: 'Rp', decimalDigits: 0).format(totalBalance),
-              style: TextStyle(fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.secondary),
+            Expanded(
+              child: Text(
+                connection.name,
+                style: TextStyle(
+                  fontWeight: FontWeight.w900, 
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(isPending ? 0.5 : 1.0),
+                ),
+              ),
             ),
+            if (isPending)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: connection.isIncoming 
+                    ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
+                    : Colors.grey.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  connection.isIncoming ? 'BUTUH ACC' : 'PENDING',
+                  style: TextStyle(
+                    fontSize: 8, 
+                    fontWeight: FontWeight.w900, 
+                    color: connection.isIncoming ? Theme.of(context).colorScheme.primary : Colors.grey,
+                  ),
+                ),
+              ),
           ],
         ),
+        subtitle: Text(
+          isPending
+            ? (connection.isIncoming ? 'Ingin berbagi data dengan Anda' : 'Menunggu persetujuan...')
+            : (data != null 
+                ? 'Terakhir update: ${DateFormat('dd MMM HH:mm').format(data['updatedAt'] is Timestamp ? (data['updatedAt'] as Timestamp).toDate() : DateTime.now())}'
+                : 'Belum ada data'),
+          style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)),
+        ),
+        trailing: isPending && connection.isIncoming
+          ? FilledButton(
+              onPressed: () => ref.read(socialProvider.notifier).acceptConnection(connection.id!),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                visualDensity: VisualDensity.compact,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('ACC', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+            )
+          : (!isPending 
+              ? Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text('SALDO', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5))),
+                    Text(
+                      NumberFormat.currency(locale: 'id', symbol: 'Rp', decimalDigits: 0).format(totalBalance),
+                      style: TextStyle(fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.secondary),
+                    ),
+                  ],
+                )
+              : null),
       ),
     );
   }

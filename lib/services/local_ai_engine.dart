@@ -208,7 +208,7 @@ class LocalAIEngine {
         "* Uang Keluar: **${currencyFormat.format(expense)}**\n"
         "* Sisa Saldo: **${currencyFormat.format(savings)}**\n\n"
         "Kondisi kamu saat ini: **$statusTxt**\n"
-        "Skor Kesehatan Keuangan: `${score}/100`\n\n"
+        "Skor Kesehatan Keuangan: `$score/100`\n\n"
         "${savings < 0 
             ? "Waduh, saldo kamu lagi minus nih. Yuk, cek lagi pengeluaran yang nggak penting biar arus kas kamu balik aman! 🙏" 
             : "Saldo aman! Sisa surplus ini bagus banget kalau kamu tabung atau buat nambah dana darurat. Mantap! 🚀"}";

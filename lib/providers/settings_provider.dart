@@ -5,7 +5,8 @@ final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
   throw UnimplementedError();
 });
 
-final settingsProvider = StateNotifierProvider<SettingsNotifier, SettingsState>((ref) {
+final settingsProvider =
+    StateNotifierProvider<SettingsNotifier, SettingsState>((ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
   return SettingsNotifier(prefs);
 });
@@ -15,6 +16,7 @@ class SettingsState {
   final bool isSmartAlertsEnabled;
   final bool isInsightDismissed;
   final bool isDarkMode;
+  final String languageCode;
   final String userName;
   final String? profilePhotoPath;
 
@@ -23,6 +25,7 @@ class SettingsState {
     required this.isSmartAlertsEnabled,
     required this.isInsightDismissed,
     required this.isDarkMode,
+    required this.languageCode,
     required this.userName,
     this.profilePhotoPath,
   });
@@ -32,14 +35,17 @@ class SettingsState {
     bool? isSmartAlertsEnabled,
     bool? isInsightDismissed,
     bool? isDarkMode,
+    String? languageCode,
     String? userName,
     String? profilePhotoPath,
   }) {
     return SettingsState(
-      isNotificationsEnabled: isNotificationsEnabled ?? this.isNotificationsEnabled,
+      isNotificationsEnabled:
+          isNotificationsEnabled ?? this.isNotificationsEnabled,
       isSmartAlertsEnabled: isSmartAlertsEnabled ?? this.isSmartAlertsEnabled,
       isInsightDismissed: isInsightDismissed ?? this.isInsightDismissed,
       isDarkMode: isDarkMode ?? this.isDarkMode,
+      languageCode: languageCode ?? this.languageCode,
       userName: userName ?? this.userName,
       profilePhotoPath: profilePhotoPath ?? this.profilePhotoPath,
     );
@@ -53,6 +59,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   static const _smartAlertsKey = 'smart_alerts_enabled';
   static const _insightKey = 'insight_dismissed';
   static const _darkModeKey = 'dark_mode';
+  static const _languageKey = 'language_code';
   static const _userNameKey = 'user_name';
   static const _photoKey = 'profile_photo_path';
 
@@ -62,6 +69,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
           isSmartAlertsEnabled: _prefs.getBool(_smartAlertsKey) ?? false,
           isInsightDismissed: _prefs.getBool(_insightKey) ?? false,
           isDarkMode: _prefs.getBool(_darkModeKey) ?? false,
+          languageCode: _prefs.getString(_languageKey) ?? 'id',
           userName: _prefs.getString(_userNameKey) ?? 'User Fina',
           profilePhotoPath: _prefs.getString(_photoKey),
         ));
@@ -79,6 +87,11 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   Future<void> setDarkMode(bool value) async {
     await _prefs.setBool(_darkModeKey, value);
     state = state.copyWith(isDarkMode: value);
+  }
+
+  Future<void> setLanguageCode(String value) async {
+    await _prefs.setString(_languageKey, value);
+    state = state.copyWith(languageCode: value);
   }
 
   Future<void> dismissInsight() async {

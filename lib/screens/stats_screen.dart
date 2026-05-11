@@ -315,7 +315,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
         BarChartData(
           alignment: BarChartAlignment.spaceAround,
           maxY: maxVal * 1.3,
-          barTouchData: BarTouchData(enabled: true),
+          barTouchData: const BarTouchData(enabled: true),
           titlesData: FlTitlesData(
             show: true,
             bottomTitles: AxisTitles(

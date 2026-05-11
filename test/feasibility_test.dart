@@ -2,11 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
 import 'package:fina/models/transaction.dart';
 import 'package:fina/models/bill.dart';
-import 'package:fina/models/budget.dart';
 import 'package:fina/models/wallet.dart';
-import 'package:fina/models/financial_goal.dart';
 import 'package:fina/services/local_ai_engine.dart';
-import 'dart:developer';
 
 void main() {
   group('Uji Kelayakan Arsitektur (OOP) & Performa', () {

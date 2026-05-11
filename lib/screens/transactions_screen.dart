@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 import '../providers/database_provider.dart';
 import '../models/transaction.dart';
 import '../models/wallet.dart';
-import '../theme/colors.dart';
 
 class TransactionsScreen extends ConsumerStatefulWidget {
   const TransactionsScreen({super.key});

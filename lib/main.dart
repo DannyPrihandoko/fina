@@ -7,8 +7,6 @@ import 'package:fina/services/notification_service.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fina/providers/settings_provider.dart';
-import 'package:fina/providers/auth_provider.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 import 'package:fina/services/streak_service.dart';

@@ -10,7 +10,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:950683922466:android:7c1d711d6a801619cc5a7b",
         "android_client_info": {
-          "package_name": "com.fina.finance"
+          "package_name": "fina.finance"
         }
       },
       "oauth_client": [
@@ -18,7 +18,7 @@
           "client_id": "950683922466-m5l920riqqpav4mkfhsgcqilnllv4ofh.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.fina.finance",
+            "package_name": "fina.finance",
             "certificate_hash": "f46cc56d1983dfa1cb3dd2fe8842af041f699b85"
           }
         },

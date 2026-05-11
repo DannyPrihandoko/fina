@@ -2,13 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import 'package:fina/theme/colors.dart';
 import 'package:fina/services/firebase_service.dart';
 import 'package:fina/providers/social_provider.dart';
 import 'package:fina/providers/database_provider.dart';
 import 'package:fina/models/transaction.dart';
 import 'package:fina/providers/settings_provider.dart';
-import 'dart:convert';
 
 class ShareDataScreen extends ConsumerStatefulWidget {
   const ShareDataScreen({super.key});
@@ -219,7 +217,8 @@ class _ShareDataScreenState extends ConsumerState<ShareDataScreen> with SingleTi
             onPressed: () async {
               final name = _nameController.text.trim();
               if (name.isNotEmpty) {
-                await ref.read(socialProvider.notifier).addConnection(uid, name);
+                final settings = ref.read(settingsProvider);
+                await ref.read(socialProvider.notifier).addConnection(uid, name, settings.userName);
                 if (mounted) {
                   setState(() => _isDialogShowing = false);
                   Navigator.pop(context); // Close dialog

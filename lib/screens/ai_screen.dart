@@ -3,8 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import '../services/local_ai_engine.dart';
 import '../providers/database_provider.dart';
-import '../theme/colors.dart';
-import '../models/transaction.dart';
 
 class AIScreen extends ConsumerStatefulWidget {
   const AIScreen({super.key});

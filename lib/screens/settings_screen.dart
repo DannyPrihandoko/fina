@@ -15,7 +15,8 @@ import '../providers/database_provider.dart';
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
-  Future<void> _toggleNotifications(WidgetRef ref, BuildContext context, bool value) async {
+  Future<void> _toggleNotifications(
+      WidgetRef ref, BuildContext context, bool value) async {
     if (value) {
       final granted = await NotificationService().requestPermissions();
       if (granted) {
@@ -31,7 +32,9 @@ class SettingsScreen extends ConsumerWidget {
             const SnackBar(content: Text('Izin notifikasi ditolak.')),
           );
         }
-        await ref.read(settingsProvider.notifier).setNotificationsEnabled(false);
+        await ref
+            .read(settingsProvider.notifier)
+            .setNotificationsEnabled(false);
       }
     } else {
       await ref.read(settingsProvider.notifier).setNotificationsEnabled(false);
@@ -79,9 +82,16 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Future<void> _signInWithGoogle(WidgetRef ref, BuildContext context) async {
-    final user = await AuthService().signInWithGoogle();
-    if (!context.mounted) return;
-    if (user != null) {
+    try {
+      final user = await ref.read(authServiceProvider).signInWithGoogle();
+      if (!context.mounted) return;
+      if (user == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Login dibatalkan.')),
+        );
+        return;
+      }
+
       // Check if cloud has data
       final hasCloud = await CloudSyncService().isCloudDataAvailable(user.uid);
       if (!context.mounted) return;
@@ -89,8 +99,10 @@ class SettingsScreen extends ConsumerWidget {
         final shouldRestore = await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-            title: const Text('Data Cloud Ditemukan', style: TextStyle(fontWeight: FontWeight.w900)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            title: const Text('Data Cloud Ditemukan',
+                style: TextStyle(fontWeight: FontWeight.w900)),
             content: const Text(
               'Kami menemukan data tersimpan di cloud milik akun ini.\n\n'
               'Apakah kamu ingin memulihkan data cloud? Data lokal saat ini akan diganti.',
@@ -116,14 +128,27 @@ class SettingsScreen extends ConsumerWidget {
         await _backupNow(ref, context, silent: true);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Login berhasil! Data lokal telah disimpan ke cloud. ☁️')),
+            const SnackBar(
+                content: Text(
+                    'Login berhasil! Data lokal telah disimpan ke cloud. ☁️')),
           );
         }
       }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Login dibatalkan atau gagal.')),
-      );
+    } on AuthServiceException catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message), backgroundColor: Colors.redAccent),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Login Google gagal. Coba lagi.'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
     }
   }
 
@@ -132,11 +157,17 @@ class SettingsScreen extends ConsumerWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Text('Keluar dari Akun?', style: TextStyle(fontWeight: FontWeight.w900)),
-        content: const Text('Data kamu tetap tersimpan di cloud. Kamu bisa login kembali kapan saja untuk memulihkannya.'),
+        title: const Text('Keluar dari Akun?',
+            style: TextStyle(fontWeight: FontWeight.w900)),
+        content: const Text(
+            'Data kamu tetap tersimpan di cloud. Kamu bisa login kembali kapan saja untuk memulihkannya.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('BATAL')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('KELUAR')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('BATAL')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('KELUAR')),
         ],
       ),
     );
@@ -145,7 +176,163 @@ class SettingsScreen extends ConsumerWidget {
     }
   }
 
-  Future<void> _backupNow(WidgetRef ref, BuildContext context, {bool silent = false}) async {
+  String _languageLabel(String code) {
+    switch (code) {
+      case 'en':
+        return 'English';
+      case 'id':
+      default:
+        return 'Indonesia';
+    }
+  }
+
+  Future<void> _showLanguageSelector(
+      WidgetRef ref, BuildContext context) async {
+    final currentCode = ref.read(settingsProvider).languageCode;
+    final selectedCode = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Theme.of(context).cardTheme.color,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Pilih Bahasa',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Pilihan ini disimpan untuk preferensi aplikasi.',
+                style: TextStyle(
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.55),
+                  fontSize: 13,
+                ),
+              ),
+              const SizedBox(height: 20),
+              _buildLanguageOption(
+                context,
+                code: 'id',
+                label: 'Indonesia',
+                description: 'Format dan teks utama Bahasa Indonesia',
+                selected: currentCode == 'id',
+              ),
+              const SizedBox(height: 10),
+              _buildLanguageOption(
+                context,
+                code: 'en',
+                label: 'English',
+                description: 'English preference for future localization',
+                selected: currentCode == 'en',
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (selectedCode == null || selectedCode == currentCode) return;
+    await ref.read(settingsProvider.notifier).setLanguageCode(selectedCode);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text('Bahasa diubah ke ${_languageLabel(selectedCode)}.')),
+      );
+    }
+  }
+
+  Widget _buildLanguageOption(
+    BuildContext context, {
+    required String code,
+    required String label,
+    required String description,
+    required bool selected,
+  }) {
+    return ListTile(
+      onTap: () => Navigator.pop(context, code),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      tileColor: selected
+          ? Theme.of(context).colorScheme.primary.withOpacity(0.08)
+          : null,
+      leading: Container(
+        width: 42,
+        height: 42,
+        decoration: BoxDecoration(
+          color: selected
+              ? Theme.of(context).colorScheme.primary.withOpacity(0.16)
+              : Theme.of(context)
+                  .colorScheme
+                  .surfaceContainerHighest
+                  .withOpacity(0.5),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Icon(
+          selected ? Icons.check_rounded : Icons.translate_rounded,
+          color: selected
+              ? Theme.of(context).colorScheme.primary
+              : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+        ),
+      ),
+      title: Text(label, style: const TextStyle(fontWeight: FontWeight.w900)),
+      subtitle: Text(description,
+          style: TextStyle(
+              fontSize: 12,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5))),
+    );
+  }
+
+  void _showBiometricInfo(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Text('Keamanan Biometrik',
+            style: TextStyle(fontWeight: FontWeight.w900)),
+        content: const Text(
+          'Kunci biometrik belum aktif di build ini karena aplikasi belum memasang modul autentikasi perangkat.\n\n'
+          'Data keuangan tetap tersimpan lokal di perangkat. Untuk perlindungan saat ini, gunakan kunci layar ponsel dan backup cloud hanya di akun Google pribadi.',
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('MENGERTI'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAboutFina(BuildContext context) {
+    showAboutDialog(
+      context: context,
+      applicationName: 'FINA',
+      applicationVersion: '1.0.0',
+      applicationIcon: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image.asset('assets/icon/logo_apps.png', width: 48, height: 48),
+      ),
+      children: const [
+        SizedBox(height: 12),
+        Text(
+          'FINA membantu mencatat arus kas, mengelola dompet, target finansial, tagihan, insight AI, OCR struk, dan berbagi rekap keuangan secara aman.',
+        ),
+      ],
+    );
+  }
+
+  Future<void> _backupNow(WidgetRef ref, BuildContext context,
+      {bool silent = false}) async {
     final user = AuthService().currentUser;
     if (user == null || user.isAnonymous) return;
 
@@ -176,7 +363,8 @@ class SettingsScreen extends ConsumerWidget {
     }
   }
 
-  Future<void> _restoreFromCloud(WidgetRef ref, BuildContext context, String uid) async {
+  Future<void> _restoreFromCloud(
+      WidgetRef ref, BuildContext context, String uid) async {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -262,34 +450,41 @@ class SettingsScreen extends ConsumerWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded, color: Theme.of(context).appBarTheme.titleTextStyle?.color, size: 20),
+          icon: Icon(Icons.arrow_back_ios_new_rounded,
+              color: Theme.of(context).appBarTheme.titleTextStyle?.color,
+              size: 20),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text('Pengaturan', style: TextStyle(fontWeight: FontWeight.w900, color: Theme.of(context).appBarTheme.titleTextStyle?.color)),
+        title: Text('Pengaturan',
+            style: TextStyle(
+                fontWeight: FontWeight.w900,
+                color: Theme.of(context).appBarTheme.titleTextStyle?.color)),
         centerTitle: false,
       ),
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
           SliverPadding(
-            padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 20, left: 24, right: 24),
+            padding: EdgeInsets.only(
+                top: MediaQuery.of(context).padding.top + 20,
+                left: 24,
+                right: 24),
             sliver: SliverToBoxAdapter(
               child: Column(
                 children: [
-                  _buildProfileHeader(context, ref, isGoogleSignedIn, currentUser),
+                  _buildProfileHeader(
+                      context, ref, isGoogleSignedIn, currentUser),
                   const SizedBox(height: 32),
                 ],
               ),
             ),
           ),
-
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             sliver: SliverToBoxAdapter(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-
                   // ─── AKUN & DATA Section ───────────────────────────────
                   _buildSectionLabel(context, 'AKUN & DATA'),
                   const SizedBox(height: 16),
@@ -313,10 +508,12 @@ class SettingsScreen extends ConsumerWidget {
                         subtitle: 'Ganti data lokal dengan data cloud',
                         onTap: () async {
                           final user = AuthService().currentUser;
-                          if (user != null) await _restoreFromCloud(ref, context, user.uid);
+                          if (user != null) {
+                            await _restoreFromCloud(ref, context, user.uid);
+                          }
                         },
                       ),
-                      _buildLastSyncTile(context, currentUser!.uid),
+                      _buildLastSyncTile(context, currentUser.uid),
                       _buildSettingsItem(
                         context,
                         icon: Icons.logout_rounded,
@@ -341,7 +538,8 @@ class SettingsScreen extends ConsumerWidget {
                         title: 'Aktifkan Notifikasi',
                         subtitle: 'Terima pengingat tagihan harian',
                         value: notificationsEnabled,
-                        onChanged: (value) => _toggleNotifications(ref, context, value),
+                        onChanged: (value) =>
+                            _toggleNotifications(ref, context, value),
                       ),
                       _buildSwitchItem(
                         context,
@@ -350,7 +548,9 @@ class SettingsScreen extends ConsumerWidget {
                         title: 'Smart Alerts',
                         subtitle: 'Notifikasi pengeluaran melebihi bulan lalu',
                         value: settings.isSmartAlertsEnabled,
-                        onChanged: (value) => ref.read(settingsProvider.notifier).setSmartAlertsEnabled(value),
+                        onChanged: (value) => ref
+                            .read(settingsProvider.notifier)
+                            .setSmartAlertsEnabled(value),
                       ),
                       if (notificationsEnabled) ...[
                         _buildSettingsItem(
@@ -360,11 +560,14 @@ class SettingsScreen extends ConsumerWidget {
                           title: 'Tes Notifikasi',
                           onTap: () async {
                             try {
-                              await NotificationService().showTestNotification();
+                              await NotificationService()
+                                  .showTestNotification();
                             } catch (e) {
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Gagal mengirim notifikasi: $e')),
+                                  SnackBar(
+                                      content: Text(
+                                          'Gagal mengirim notifikasi: $e')),
                                 );
                               }
                             }
@@ -378,15 +581,14 @@ class SettingsScreen extends ConsumerWidget {
 
                   _buildSectionLabel(context, 'UMUM'),
                   const SizedBox(height: 16),
-                  _buildSettingsGroup(
-                    context,
-                    [
+                  _buildSettingsGroup(context, [
                     _buildSettingsItem(
                       context,
                       icon: Icons.language_rounded,
                       iconColor: Colors.blue,
                       title: 'Bahasa',
-                      trailingText: 'Indonesia',
+                      trailingText: _languageLabel(settings.languageCode),
+                      onTap: () => _showLanguageSelector(ref, context),
                     ),
                     _buildSwitchItem(
                       context,
@@ -395,7 +597,9 @@ class SettingsScreen extends ConsumerWidget {
                       title: 'Mode Gelap',
                       subtitle: 'Aktifkan tema gelap yang elegan',
                       value: settings.isDarkMode,
-                      onChanged: (value) => ref.read(settingsProvider.notifier).setDarkMode(value),
+                      onChanged: (value) => ref
+                          .read(settingsProvider.notifier)
+                          .setDarkMode(value),
                     ),
                     _buildSettingsItem(
                       context,
@@ -403,6 +607,7 @@ class SettingsScreen extends ConsumerWidget {
                       iconColor: Colors.teal,
                       title: 'Keamanan (Biometrik)',
                       trailingText: 'Nonaktif',
+                      onTap: () => _showBiometricInfo(context),
                     ),
                     _buildSettingsItem(
                       context,
@@ -410,6 +615,7 @@ class SettingsScreen extends ConsumerWidget {
                       iconColor: Colors.orange,
                       title: 'Tentang Fina',
                       trailingText: 'v1.0.0',
+                      onTap: () => _showAboutFina(context),
                     ),
                   ]),
 
@@ -418,7 +624,10 @@ class SettingsScreen extends ConsumerWidget {
                     child: Text(
                       'FINA APP • MADE WITH LOVE',
                       style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.3),
                         fontSize: 10,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 2,
@@ -435,23 +644,31 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildProfileHeader(BuildContext context, WidgetRef ref, bool isGoogleSignedIn, user) {
+  Widget _buildProfileHeader(
+      BuildContext context, WidgetRef ref, bool isGoogleSignedIn, user) {
     final settings = ref.watch(settingsProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final String displayName = isGoogleSignedIn ? (user?.displayName ?? settings.userName) : settings.userName;
+    final String displayName = isGoogleSignedIn
+        ? (user?.displayName ?? settings.userName)
+        : settings.userName;
     final String? photoUrl = isGoogleSignedIn ? user?.photoURL : null;
-    final String? localPhoto = isGoogleSignedIn ? null : settings.profilePhotoPath;
+    final String? localPhoto =
+        isGoogleSignedIn ? null : settings.profilePhotoPath;
 
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.borderColor.withOpacity(0.5)),
+        border: Border.all(
+            color: isDark
+                ? AppColors.darkBorder
+                : AppColors.borderColor.withOpacity(0.5)),
         boxShadow: [
           BoxShadow(
-            color: (isDark ? Colors.black : AppColors.textDarkBlue).withValues(alpha: 0.05),
+            color: (isDark ? Colors.black : AppColors.textDarkBlue)
+                .withValues(alpha: 0.05),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -467,16 +684,26 @@ class SettingsScreen extends ConsumerWidget {
               decoration: BoxDecoration(
                 color: isDark ? AppColors.darkBackground : AppColors.white,
                 shape: BoxShape.circle,
-                border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.borderColor, width: 2),
+                border: Border.all(
+                    color:
+                        isDark ? AppColors.darkBorder : AppColors.borderColor,
+                    width: 2),
                 image: photoUrl != null
-                    ? DecorationImage(image: NetworkImage(photoUrl), fit: BoxFit.cover)
+                    ? DecorationImage(
+                        image: NetworkImage(photoUrl), fit: BoxFit.cover)
                     : localPhoto != null
-                        ? DecorationImage(image: FileImage(File(localPhoto)), fit: BoxFit.cover)
+                        ? DecorationImage(
+                            image: FileImage(File(localPhoto)),
+                            fit: BoxFit.cover)
                         : null,
               ),
               child: (photoUrl == null && localPhoto == null)
-                  ? Icon(isGoogleSignedIn ? Icons.account_circle_rounded : Icons.person_rounded,
-                      color: Theme.of(context).textTheme.bodyLarge?.color, size: 40)
+                  ? Icon(
+                      isGoogleSignedIn
+                          ? Icons.account_circle_rounded
+                          : Icons.person_rounded,
+                      color: Theme.of(context).textTheme.bodyLarge?.color,
+                      size: 40)
                   : null,
             ),
           ),
@@ -487,7 +714,10 @@ class SettingsScreen extends ConsumerWidget {
               children: [
                 Text(
                   displayName,
-                  style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color, fontSize: 20, fontWeight: FontWeight.w900),
+                  style: TextStyle(
+                      color: Theme.of(context).textTheme.bodyLarge?.color,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -495,7 +725,12 @@ class SettingsScreen extends ConsumerWidget {
                 if (isGoogleSignedIn) ...[
                   Text(
                     user?.email ?? '',
-                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5), fontSize: 11),
+                    style: TextStyle(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.5),
+                        fontSize: 11),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -503,18 +738,25 @@ class SettingsScreen extends ConsumerWidget {
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
                           color: Colors.green.withOpacity(0.15),
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.green.withOpacity(0.3)),
+                          border:
+                              Border.all(color: Colors.green.withOpacity(0.3)),
                         ),
-                        child: Row(
+                        child: const Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.cloud_done_rounded, size: 12, color: Colors.green),
-                            const SizedBox(width: 4),
-                            const Text('Cloud Aktif', style: TextStyle(color: Colors.green, fontSize: 10, fontWeight: FontWeight.w700)),
+                            Icon(Icons.cloud_done_rounded,
+                                size: 12, color: Colors.green),
+                            SizedBox(width: 4),
+                            Text('Cloud Aktif',
+                                style: TextStyle(
+                                    color: Colors.green,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700)),
                           ],
                         ),
                       ),
@@ -522,14 +764,19 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ] else ...[
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: Theme.of(context).colorScheme.secondary,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       'FINA PREMIUM',
-                      style: TextStyle(color: Theme.of(context).colorScheme.onSecondary, fontSize: 8, fontWeight: FontWeight.w900, letterSpacing: 1),
+                      style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSecondary,
+                          fontSize: 8,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1),
                     ),
                   ),
                 ],
@@ -539,7 +786,10 @@ class SettingsScreen extends ConsumerWidget {
           if (!isGoogleSignedIn)
             IconButton(
               onPressed: () => _editName(ref, context, settings.userName),
-              icon: Icon(Icons.edit_note_rounded, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5), size: 28),
+              icon: Icon(Icons.edit_note_rounded,
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                  size: 28),
             ),
         ],
       ),
@@ -555,12 +805,17 @@ class SettingsScreen extends ConsumerWidget {
           color: Colors.red.withOpacity(0.1),
           borderRadius: BorderRadius.circular(14),
         ),
-        child: const Icon(Icons.g_mobiledata_rounded, color: Colors.red, size: 26),
+        child:
+            const Icon(Icons.g_mobiledata_rounded, color: Colors.red, size: 26),
       ),
-      title: const Text('Masuk dengan Google', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14)),
+      title: const Text('Masuk dengan Google',
+          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14)),
       subtitle: Text('Simpan data kamu secara otomatis di cloud',
-          style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4))),
-      trailing: Icon(Icons.chevron_right_rounded, color: Theme.of(context).dividerColor),
+          style: TextStyle(
+              fontSize: 11,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4))),
+      trailing: Icon(Icons.chevron_right_rounded,
+          color: Theme.of(context).dividerColor),
       onTap: () => _signInWithGoogle(ref, context),
     );
   }
@@ -574,18 +829,25 @@ class SettingsScreen extends ConsumerWidget {
             ? 'Terakhir sync: ${DateFormat('dd MMM yyyy, HH:mm').format(lastSync.toLocal())}'
             : 'Belum pernah sync';
         return ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
           leading: Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: Colors.grey.withOpacity(0.1),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(Icons.access_time_rounded, color: Colors.grey.shade600, size: 22),
+            child: Icon(Icons.access_time_rounded,
+                color: Colors.grey.shade600, size: 22),
           ),
           title: Text(text,
-              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12,
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
+              style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withOpacity(0.6))),
         );
       },
     );
@@ -642,17 +904,33 @@ class SettingsScreen extends ConsumerWidget {
         ),
         child: Icon(icon, color: iconColor, size: 22),
       ),
-      title: Text(title, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Theme.of(context).textTheme.bodyLarge?.color)),
+      title: Text(title,
+          style: TextStyle(
+              fontWeight: FontWeight.w900,
+              fontSize: 14,
+              color: Theme.of(context).textTheme.bodyLarge?.color)),
       subtitle: subtitle != null
-          ? Text(subtitle, style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)))
+          ? Text(subtitle,
+              style: TextStyle(
+                  fontSize: 11,
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.4)))
           : null,
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (trailingText != null)
-            Text(trailingText, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4), fontSize: 13, fontWeight: FontWeight.w600)),
+            Text(trailingText,
+                style: TextStyle(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.4),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600)),
           const SizedBox(width: 8),
-          Icon(Icons.chevron_right_rounded, color: Theme.of(context).dividerColor, size: 20),
+          Icon(Icons.chevron_right_rounded,
+              color: Theme.of(context).dividerColor, size: 20),
         ],
       ),
     );
@@ -677,8 +955,15 @@ class SettingsScreen extends ConsumerWidget {
         ),
         child: Icon(icon, color: iconColor, size: 22),
       ),
-      title: Text(title, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Theme.of(context).colorScheme.onSurface)),
-      subtitle: Text(subtitle, style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4))),
+      title: Text(title,
+          style: TextStyle(
+              fontWeight: FontWeight.w900,
+              fontSize: 14,
+              color: Theme.of(context).colorScheme.onSurface)),
+      subtitle: Text(subtitle,
+          style: TextStyle(
+              fontSize: 11,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4))),
       trailing: Switch.adaptive(
         value: value,
         activeColor: Theme.of(context).colorScheme.secondary,

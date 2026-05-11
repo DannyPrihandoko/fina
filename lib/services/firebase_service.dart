@@ -66,4 +66,52 @@ class FirebaseService {
       return null;
     }
   }
+
+  // --- RELATIONSHIP MANAGEMENT ---
+
+  Future<void> requestRelationship(String targetUid, String myName, String targetName) async {
+    final user = await ensureLoggedIn();
+    if (user == null) return;
+
+    final docId = user.uid.compareTo(targetUid) < 0 
+        ? '${user.uid}_$targetUid' 
+        : '${targetUid}_${user.uid}';
+
+    try {
+      await _db.collection('relationships').doc(docId).set({
+        'id': docId,
+        'uids': [user.uid, targetUid],
+        'fromUid': user.uid,
+        'toUid': targetUid,
+        'fromName': myName,
+        'toName': targetName,
+        'status': 'pending',
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      debugPrint('Requesting relationship failed: $e');
+    }
+  }
+
+  Future<void> updateRelationshipStatus(String docId, String status) async {
+    try {
+      await _db.collection('relationships').doc(docId).update({
+        'status': status,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      debugPrint('Updating relationship status failed: $e');
+    }
+  }
+
+  Stream<QuerySnapshot<Map<String, dynamic>>> streamRelationships() {
+    final user = currentUser;
+    if (user == null) return const Stream.empty();
+
+    return _db
+        .collection('relationships')
+        .where('uids', arrayContains: user.uid)
+        .snapshots();
+  }
 }

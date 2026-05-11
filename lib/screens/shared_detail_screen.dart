@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fina/theme/colors.dart';
 import 'package:fina/providers/social_provider.dart';
 import 'package:intl/intl.dart';
-import 'package:percent_indicator/linear_percent_indicator.dart';
 
 class SharedDetailScreen extends ConsumerWidget {
   final Connection connection;
@@ -14,15 +13,40 @@ class SharedDetailScreen extends ConsumerWidget {
     final data = connection.lastData;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
-    if (data == null) {
+    final recap = data != null ? data['recap'] as Map<String, dynamic>? : null;
+    final wallets = data != null ? (data['wallets'] as List).cast<Map<String, dynamic>>() : <Map<String, dynamic>>[];
+
+    if (connection.status == 'pending') {
+      return Scaffold(
+        appBar: AppBar(title: Text(connection.name)),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.lock_person_rounded, size: 64, color: Theme.of(context).colorScheme.primary.withOpacity(0.3)),
+              const SizedBox(height: 16),
+              const Text('Hubungan Belum Disetujui', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 48),
+                child: Text(
+                  'Data keuangan hanya akan tampil setelah kedua belah pihak menyetujui hubungan ini.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (data == null || recap == null) {
       return Scaffold(
         appBar: AppBar(title: Text(connection.name)),
         body: const Center(child: Text('Data belum tersedia. Silakan refresh Hubungan.')),
       );
     }
-
-    final recap = data['recap'] as Map<String, dynamic>;
-    final wallets = (data['wallets'] as List).cast<Map<String, dynamic>>();
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,

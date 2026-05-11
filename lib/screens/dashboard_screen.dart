@@ -333,7 +333,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         Text(title, style: Theme.of(context).textTheme.titleMedium),
         GestureDetector(
           onTap: onTap,
-          child: Text(
+          child: const Text(
             'Lihat Semua',
             style: TextStyle(color: AppColors.ctaAqua, fontWeight: FontWeight.bold, fontSize: 12),
           ),
