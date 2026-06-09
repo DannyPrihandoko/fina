@@ -19,6 +19,11 @@ enum AIIntent {
 }
 
 class LocalAIEngine {
+  // Singleton pattern
+  LocalAIEngine._internal();
+  static final LocalAIEngine _instance = LocalAIEngine._internal();
+  factory LocalAIEngine() => _instance;
+
   final currencyFormat = NumberFormat.currency(symbol: 'Rp', decimalDigits: 0);
 
   /// Analyzes the user's query and returns a structured response.

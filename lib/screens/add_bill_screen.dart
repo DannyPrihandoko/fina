@@ -5,6 +5,7 @@ import '../models/bill.dart';
 import '../providers/database_provider.dart';
 import '../services/notification_service.dart';
 import '../utils/currency_formatter.dart';
+import '../utils/constants.dart';
 import '../widgets/success_modal.dart';
 
 class AddBillScreen extends ConsumerStatefulWidget {
@@ -24,14 +25,7 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
   late String _category;
   late bool _reminderEnabled;
 
-  final List<String> _categories = [
-    'Listrik',
-    'Air',
-    'Internet',
-    'Sewa',
-    'Asuransi',
-    'Lainnya',
-  ];
+  final List<String> _categories = AppConstants.defaultBillCategories;
 
   @override
   void initState() {
@@ -45,7 +39,7 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
     _amountController = TextEditingController(text: amountText);
     
     _selectedDate = widget.existingBill?.dueDate ?? DateTime.now().add(const Duration(days: 7));
-    _category = widget.existingBill?.category ?? 'Listrik';
+    _category = widget.existingBill?.category ?? AppConstants.defaultBillCategory;
     _reminderEnabled = widget.existingBill?.reminderEnabled ?? true;
   }
 

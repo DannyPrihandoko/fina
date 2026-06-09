@@ -50,7 +50,8 @@ class FirebaseService {
   Future<Map<String, dynamic>?> fetchSnapshot(String uid) async {
     try {
       final doc = await _db.collection('snapshots').doc(uid).get();
-      return doc.data();
+      final data = doc.data();
+      return data != null ? _sanitizeData(data) as Map<String, dynamic> : null;
     } catch (e) {
       debugPrint('Fetching snapshot failed for $uid: $e');
       return null;
@@ -60,7 +61,8 @@ class FirebaseService {
   Future<Map<String, dynamic>?> fetchProfile(String uid) async {
     try {
       final doc = await _db.collection('profiles').doc(uid).get();
-      return doc.data();
+      final data = doc.data();
+      return data != null ? _sanitizeData(data) as Map<String, dynamic> : null;
     } catch (e) {
       debugPrint('Fetching profile failed for $uid: $e');
       return null;
@@ -105,13 +107,34 @@ class FirebaseService {
     }
   }
 
-  Stream<QuerySnapshot<Map<String, dynamic>>> streamRelationships() {
+  Stream<List<Map<String, dynamic>>> streamRelationships() {
     final user = currentUser;
     if (user == null) return const Stream.empty();
 
     return _db
         .collection('relationships')
         .where('uids', arrayContains: user.uid)
-        .snapshots();
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return _sanitizeData(data) as Map<String, dynamic>;
+      }).toList();
+    });
+  }
+
+  /// Helper to sanitize Firestore types (e.g. Timestamp to ISO string)
+  dynamic _sanitizeData(dynamic value) {
+    if (value is Timestamp) {
+      return value.toDate().toIso8601String();
+    }
+    if (value is Map) {
+      return value.map((k, v) => MapEntry(k.toString(), _sanitizeData(v)));
+    }
+    if (value is List) {
+      return value.map(_sanitizeData).toList();
+    }
+    return value;
   }
 }

@@ -25,6 +25,32 @@ class Transaction {
     this.adminFee = 0,
   });
 
+  Transaction copyWith({
+    int? id,
+    String? title,
+    double? amount,
+    TransactionType? type,
+    String? category,
+    DateTime? date,
+    String? note,
+    int? walletId,
+    int? toWalletId,
+    double? adminFee,
+  }) {
+    return Transaction(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      amount: amount ?? this.amount,
+      type: type ?? this.type,
+      category: category ?? this.category,
+      date: date ?? this.date,
+      note: note ?? this.note,
+      walletId: walletId ?? this.walletId,
+      toWalletId: toWalletId ?? this.toWalletId,
+      adminFee: adminFee ?? this.adminFee,
+    );
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,

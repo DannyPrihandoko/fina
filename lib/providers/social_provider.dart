@@ -1,91 +1,28 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fina/services/firebase_service.dart';
 import 'package:fina/providers/settings_provider.dart';
+import '../models/connection.dart';
 
-class Connection {
-  final String uid;
-  final String name;
-  final String? id; // Firestore Doc ID
-  final String status; // 'pending' | 'accepted'
-  final bool isIncoming;
-  final Map<String, dynamic>? lastData;
+export '../models/connection.dart';
 
-  Connection({
-    required this.uid,
-    required this.name,
-    this.id,
-    this.status = 'accepted',
-    this.isIncoming = false,
-    this.lastData,
-  });
-
-  Connection copyWith({
-    Map<String, dynamic>? lastData,
-    String? name,
-    String? status,
-    bool? isIncoming,
-  }) {
-    return Connection(
-      uid: uid,
-      name: name ?? this.name,
-      id: id,
-      status: status ?? this.status,
-      isIncoming: isIncoming ?? this.isIncoming,
-      lastData: lastData ?? this.lastData,
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-        'uid': uid,
-        'name': name,
-        'id': id,
-        'status': status,
-        'isIncoming': isIncoming,
-        // Persist lastData so it survives app restarts
-        if (lastData != null) 'lastData': lastData,
-      };
-
-  factory Connection.fromJson(Map<String, dynamic> json) => Connection(
-        uid: json['uid'],
-        name: json['name'],
-        id: json['id'],
-        status: json['status'] ?? 'accepted',
-        isIncoming: json['isIncoming'] ?? false,
-        lastData: json['lastData'] != null
-            ? Map<String, dynamic>.from(json['lastData'])
-            : null,
-      );
-}
-
-class SocialState {
-  final List<Connection> connections;
-  final bool isLoading;
-
-  SocialState({required this.connections, this.isLoading = false});
-
-  SocialState copyWith({List<Connection>? connections, bool? isLoading}) {
-    return SocialState(
-      connections: connections ?? this.connections,
-      isLoading: isLoading ?? this.isLoading,
-    );
-  }
-}
+final firebaseServiceProvider = Provider((ref) => FirebaseService());
 
 final socialProvider = StateNotifierProvider<SocialNotifier, SocialState>((ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
-  return SocialNotifier(prefs);
+  final firebaseService = ref.watch(firebaseServiceProvider);
+  return SocialNotifier(prefs, firebaseService);
 });
 
 class SocialNotifier extends StateNotifier<SocialState> {
   final SharedPreferences _prefs;
+  final FirebaseService _firebaseService;
   static const _storageKey = 'fina_connections';
   StreamSubscription? _sub;
 
-  SocialNotifier(this._prefs) : super(SocialState(connections: [])) {
+  SocialNotifier(this._prefs, this._firebaseService) : super(SocialState(connections: [])) {
     _loadFromPrefs();
     _initFirestoreListener();
   }
@@ -97,17 +34,15 @@ class SocialNotifier extends StateNotifier<SocialState> {
   }
 
   void _initFirestoreListener() {
-    _sub = FirebaseService().streamRelationships().listen((snapshot) {
-      final myUid = FirebaseService().currentUser?.uid;
+    _sub = _firebaseService.streamRelationships().listen((snapshot) {
+      final myUid = _firebaseService.currentUser?.uid;
       if (myUid == null) return;
 
       final List<Connection> updatedList = [];
       // Track which UIDs newly became 'accepted' so we can fetch their data
       final List<String> newlyAccepted = [];
 
-      final docs = snapshot.docs;
-      for (var doc in docs) {
-        final data = doc.data();
+      for (var data in snapshot) {
         final fromUid = data['fromUid'];
         final toUid = data['toUid'];
         final status = data['status'] ?? 'pending';
@@ -130,7 +65,7 @@ class SocialNotifier extends StateNotifier<SocialState> {
         updatedList.add(Connection(
           uid: peerUid,
           name: peerName,
-          id: doc.id,
+          id: data['id'],
           status: status,
           isIncoming: isIncoming,
           lastData: existing.lastData, // Preserve cached data
@@ -169,37 +104,22 @@ class SocialNotifier extends StateNotifier<SocialState> {
   }
 
   Future<void> _saveToPrefs() async {
-    final data = state.connections.map((e) => jsonEncode(_sanitizeForJson(e.toJson()))).toList();
+    final data = state.connections.map((e) => jsonEncode(e.toJson())).toList();
     await _prefs.setStringList(_storageKey, data);
-  }
-
-  /// Recursively converts Firestore Timestamp objects to ISO 8601 strings
-  /// so the data can be safely JSON-encoded and stored in SharedPreferences.
-  dynamic _sanitizeForJson(dynamic value) {
-    if (value is Timestamp) {
-      return value.toDate().toIso8601String();
-    }
-    if (value is Map) {
-      return value.map((k, v) => MapEntry(k.toString(), _sanitizeForJson(v)));
-    }
-    if (value is List) {
-      return value.map(_sanitizeForJson).toList();
-    }
-    return value;
   }
 
   Future<bool> addConnection(String uid, String name, String myName) async {
     if (state.connections.any((e) => e.uid == uid)) return false;
 
     // First request in Firestore
-    await FirebaseService().requestRelationship(uid, myName, name);
+    await _firebaseService.requestRelationship(uid, myName, name);
     
     // Note: The listener will automatically update our state when the doc is created.
     return true;
   }
 
   Future<void> acceptConnection(String docId) async {
-    await FirebaseService().updateRelationshipStatus(docId, 'accepted');
+    await _firebaseService.updateRelationshipStatus(docId, 'accepted');
     // FIX 4: The Firestore listener will detect the status change and auto-fetch data.
     // No manual action needed here — listener handles it via newlyAccepted logic.
   }
@@ -224,7 +144,7 @@ class SocialNotifier extends StateNotifier<SocialState> {
   }
 
   Future<void> refreshConnection(String uid) async {
-    final data = await FirebaseService().fetchSnapshot(uid);
+    final data = await _firebaseService.fetchSnapshot(uid);
     if (data != null) {
       state = state.copyWith(
         connections: state.connections.map((e) {

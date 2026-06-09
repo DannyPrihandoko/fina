@@ -3,6 +3,11 @@ import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart
 import 'local_ai_engine.dart';
 
 class OCRService {
+  // Singleton pattern
+  OCRService._internal();
+  static final OCRService _instance = OCRService._internal();
+  factory OCRService() => _instance;
+
   final ImagePicker _picker = ImagePicker();
   final TextRecognizer _textRecognizer = TextRecognizer(script: TextRecognitionScript.latin);
   final LocalAIEngine _aiEngine = LocalAIEngine();

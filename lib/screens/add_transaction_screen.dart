@@ -5,6 +5,7 @@ import '../providers/database_provider.dart';
 import '../models/transaction.dart';
 import '../models/wallet.dart';
 import '../utils/currency_formatter.dart';
+import '../utils/constants.dart';
 import '../widgets/success_modal.dart';
 
 class AddTransactionScreen extends ConsumerStatefulWidget {
@@ -34,20 +35,12 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
   int? _targetWalletId;
   bool _isAutoFilled = false;
 
-  final List<String> _categories = [
-    'Makanan',
-    'Belanja',
-    'Transportasi',
-    'Hiburan',
-    'Kesehatan',
-    'Cicilan',
-    'Lainnya',
-  ];
+  final List<String> _categories = AppConstants.defaultCategories;
 
   @override
   void initState() {
     super.initState();
-    _category = widget.initialCategory ?? 'Makanan';
+    _category = widget.initialCategory ?? AppConstants.defaultCategory;
     _titleController = TextEditingController(text: widget.initialTitle);
     
     // Formatting initial amount if present

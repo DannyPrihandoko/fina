@@ -2,18 +2,21 @@ import 'package:home_widget/home_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class StreakService {
+  final SharedPreferences _prefs;
+  
   static const String _streakKey = 'streak_count';
   static const String _lastLoggedDateKey = 'last_logged_date';
   static const String _androidWidgetName = 'FinaWidgetProvider';
+
+  StreakService(this._prefs);
 
   static Future<void> init() async {
     await HomeWidget.setAppGroupId('group.com.example.fina');
   }
 
-  static Future<int> recordActivity() async {
-    final prefs = await SharedPreferences.getInstance();
-    int currentStreak = prefs.getInt(_streakKey) ?? 0;
-    int lastLoggedEpoch = prefs.getInt(_lastLoggedDateKey) ?? 0;
+  Future<int> recordActivity() async {
+    int currentStreak = _prefs.getInt(_streakKey) ?? 0;
+    int lastLoggedEpoch = _prefs.getInt(_lastLoggedDateKey) ?? 0;
     
     DateTime now = DateTime.now();
     DateTime today = DateTime(now.year, now.month, now.day);
@@ -41,8 +44,8 @@ class StreakService {
       }
     }
     
-    await prefs.setInt(_streakKey, currentStreak);
-    await prefs.setInt(_lastLoggedDateKey, now.millisecondsSinceEpoch);
+    await _prefs.setInt(_streakKey, currentStreak);
+    await _prefs.setInt(_lastLoggedDateKey, now.millisecondsSinceEpoch);
     
     // Send to HomeWidget
     await HomeWidget.saveWidgetData<int>('streak_count', currentStreak);

@@ -12,6 +12,7 @@ import '../providers/settings_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/database_provider.dart';
 import '../widgets/success_modal.dart';
+import '../widgets/settings_tiles.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -495,22 +496,22 @@ class SettingsScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // ─── AKUN & DATA Section ───────────────────────────────
-                  _buildSectionLabel(context, 'AKUN & DATA'),
+                  const SectionLabel(label: 'AKUN & DATA'),
                   const SizedBox(height: 16),
-                  _buildSettingsGroup(context, [
+                  SettingsGroup(children: [
                     if (!isGoogleSignedIn) ...[
-                      _buildGoogleSignInButton(context, ref),
+                      GoogleSignInButton(
+                        onTap: () => _signInWithGoogle(ref, context),
+                      ),
                     ] else ...[
-                      _buildSettingsItem(
-                        context,
+                      SettingsItem(
                         icon: Icons.cloud_upload_rounded,
                         iconColor: Colors.blue,
                         title: 'Backup ke Cloud',
                         subtitle: 'Simpan semua data ke Google Cloud',
                         onTap: () => _backupNow(ref, context),
                       ),
-                      _buildSettingsItem(
-                        context,
+                      SettingsItem(
                         icon: Icons.cloud_download_rounded,
                         iconColor: Colors.green,
                         title: 'Pulihkan dari Cloud',
@@ -522,9 +523,8 @@ class SettingsScreen extends ConsumerWidget {
                           }
                         },
                       ),
-                      _buildLastSyncTile(context, currentUser.uid),
-                      _buildSettingsItem(
-                        context,
+                      LastSyncTile(uid: currentUser.uid),
+                      SettingsItem(
                         icon: Icons.logout_rounded,
                         iconColor: Colors.red,
                         title: 'Keluar dari Akun Google',
@@ -535,13 +535,11 @@ class SettingsScreen extends ConsumerWidget {
 
                   const SizedBox(height: 32),
 
-                  _buildSectionLabel(context, 'NOTIFIKASI'),
+                  const SectionLabel(label: 'NOTIFIKASI'),
                   const SizedBox(height: 16),
-                  _buildSettingsGroup(
-                    context,
-                    [
-                      _buildSwitchItem(
-                        context,
+                  SettingsGroup(
+                    children: [
+                      SwitchItem(
                         icon: Icons.notifications_active_rounded,
                         iconColor: Theme.of(context).colorScheme.secondary,
                         title: 'Aktifkan Notifikasi',
@@ -550,8 +548,7 @@ class SettingsScreen extends ConsumerWidget {
                         onChanged: (value) =>
                             _toggleNotifications(ref, context, value),
                       ),
-                      _buildSwitchItem(
-                        context,
+                      SwitchItem(
                         icon: Icons.auto_graph_rounded,
                         iconColor: Colors.amber,
                         title: 'Smart Alerts',
@@ -562,8 +559,7 @@ class SettingsScreen extends ConsumerWidget {
                             .setSmartAlertsEnabled(value),
                       ),
                       if (notificationsEnabled) ...[
-                        _buildSettingsItem(
-                          context,
+                        SettingsItem(
                           icon: Icons.send_rounded,
                           iconColor: Theme.of(context).colorScheme.primary,
                           title: 'Tes Notifikasi',
@@ -588,19 +584,17 @@ class SettingsScreen extends ConsumerWidget {
 
                   const SizedBox(height: 32),
 
-                  _buildSectionLabel(context, 'UMUM'),
+                  const SectionLabel(label: 'UMUM'),
                   const SizedBox(height: 16),
-                  _buildSettingsGroup(context, [
-                    _buildSettingsItem(
-                      context,
+                  SettingsGroup(children: [
+                    SettingsItem(
                       icon: Icons.language_rounded,
                       iconColor: Colors.blue,
                       title: 'Bahasa',
                       trailingText: _languageLabel(settings.languageCode),
                       onTap: () => _showLanguageSelector(ref, context),
                     ),
-                    _buildSwitchItem(
-                      context,
+                    SwitchItem(
                       icon: Icons.dark_mode_rounded,
                       iconColor: Colors.deepPurple,
                       title: 'Mode Gelap',
@@ -610,16 +604,14 @@ class SettingsScreen extends ConsumerWidget {
                           .read(settingsProvider.notifier)
                           .setDarkMode(value),
                     ),
-                    _buildSettingsItem(
-                      context,
+                    SettingsItem(
                       icon: Icons.verified_user_rounded,
                       iconColor: Colors.teal,
                       title: 'Keamanan (Biometrik)',
                       trailingText: 'Nonaktif',
                       onTap: () => _showBiometricInfo(context),
                     ),
-                    _buildSettingsItem(
-                      context,
+                    SettingsItem(
                       icon: Icons.info_rounded,
                       iconColor: Colors.orange,
                       title: 'Tentang Fina',
@@ -801,182 +793,6 @@ class SettingsScreen extends ConsumerWidget {
                   size: 28),
             ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildGoogleSignInButton(BuildContext context, WidgetRef ref) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      leading: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: Colors.red.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child:
-            const Icon(Icons.g_mobiledata_rounded, color: Colors.red, size: 26),
-      ),
-      title: const Text('Masuk dengan Google',
-          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14)),
-      subtitle: Text('Simpan data kamu secara otomatis di cloud',
-          style: TextStyle(
-              fontSize: 11,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4))),
-      trailing: Icon(Icons.chevron_right_rounded,
-          color: Theme.of(context).dividerColor),
-      onTap: () => _signInWithGoogle(ref, context),
-    );
-  }
-
-  Widget _buildLastSyncTile(BuildContext context, String uid) {
-    return FutureBuilder<DateTime?>(
-      future: CloudSyncService().getLastSyncTime(uid),
-      builder: (context, snapshot) {
-        final lastSync = snapshot.data;
-        final text = lastSync != null
-            ? 'Terakhir sync: ${DateFormat('dd MMM yyyy, HH:mm').format(lastSync.toLocal())}'
-            : 'Belum pernah sync';
-        return ListTile(
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-          leading: Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.grey.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(Icons.access_time_rounded,
-                color: Colors.grey.shade600, size: 22),
-          ),
-          title: Text(text,
-              style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 12,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withOpacity(0.6))),
-        );
-      },
-    );
-  }
-
-  Widget _buildSectionLabel(BuildContext context, String label) {
-    return Text(
-      label,
-      style: TextStyle(
-        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-        fontSize: 10,
-        fontWeight: FontWeight.w900,
-        letterSpacing: 1.5,
-      ),
-    );
-  }
-
-  Widget _buildSettingsGroup(BuildContext context, List<Widget> items) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardTheme.color,
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).dividerColor.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: items,
-      ),
-    );
-  }
-
-  Widget _buildSettingsItem(
-    BuildContext context, {
-    required IconData icon,
-    required Color iconColor,
-    required String title,
-    String? subtitle,
-    String? trailingText,
-    VoidCallback? onTap,
-  }) {
-    return ListTile(
-      onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      leading: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: iconColor.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Icon(icon, color: iconColor, size: 22),
-      ),
-      title: Text(title,
-          style: TextStyle(
-              fontWeight: FontWeight.w900,
-              fontSize: 14,
-              color: Theme.of(context).textTheme.bodyLarge?.color)),
-      subtitle: subtitle != null
-          ? Text(subtitle,
-              style: TextStyle(
-                  fontSize: 11,
-                  color:
-                      Theme.of(context).colorScheme.onSurface.withOpacity(0.4)))
-          : null,
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (trailingText != null)
-            Text(trailingText,
-                style: TextStyle(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withOpacity(0.4),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600)),
-          const SizedBox(width: 8),
-          Icon(Icons.chevron_right_rounded,
-              color: Theme.of(context).dividerColor, size: 20),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSwitchItem(
-    BuildContext context, {
-    required IconData icon,
-    required Color iconColor,
-    required String title,
-    required String subtitle,
-    required bool value,
-    required Function(bool) onChanged,
-  }) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      leading: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: iconColor.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Icon(icon, color: iconColor, size: 22),
-      ),
-      title: Text(title,
-          style: TextStyle(
-              fontWeight: FontWeight.w900,
-              fontSize: 14,
-              color: Theme.of(context).colorScheme.onSurface)),
-      subtitle: Text(subtitle,
-          style: TextStyle(
-              fontSize: 11,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4))),
-      trailing: Switch.adaptive(
-        value: value,
-        activeColor: Theme.of(context).colorScheme.secondary,
-        onChanged: onChanged,
       ),
     );
   }

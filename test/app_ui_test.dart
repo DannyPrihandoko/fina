@@ -1,16 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:fina/main.dart'; // Sesuaikan jika FinaApp ada di lokasi lain
+import 'package:fina/providers/settings_provider.dart';
 
 void main() {
   group('UI dan Button Integration Test', () {
     testWidgets('Report: Memastikan aplikasi berjalan dan UI utama tampil', (WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final sharedPrefs = await SharedPreferences.getInstance();
+
       // 1. Inisialisasi Aplikasi (di dalam ProviderScope karena menggunakan Riverpod)
       await tester.pumpWidget(
-        const ProviderScope(
-          child: FinaApp(),
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(sharedPrefs),
+          ],
+          child: const FinaApp(),
         ),
       );
 
@@ -28,9 +36,15 @@ void main() {
     });
 
     testWidgets('Report: Memeriksa interaksi tombol (Button Click Test)', (WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final sharedPrefs = await SharedPreferences.getInstance();
+
       await tester.pumpWidget(
-        const ProviderScope(
-          child: FinaApp(),
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(sharedPrefs),
+          ],
+          child: const FinaApp(),
         ),
       );
       await tester.pumpAndSettle();

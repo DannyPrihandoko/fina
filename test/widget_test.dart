@@ -8,15 +8,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:fina/main.dart';
+import 'package:fina/providers/settings_provider.dart';
 
 void main() {
   testWidgets('Smoke test', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final sharedPrefs = await SharedPreferences.getInstance();
+
     // Build our app and trigger a frame.
     await tester.pumpWidget(
-      const ProviderScope(
-        child: FinaApp(),
+      ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(sharedPrefs),
+        ],
+        child: const FinaApp(),
       ),
     );
 
@@ -24,3 +32,4 @@ void main() {
     expect(find.byType(MaterialApp), findsOneWidget);
   });
 }
+
