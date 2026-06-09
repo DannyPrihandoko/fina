@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fina/services/firebase_service.dart';
@@ -44,6 +45,8 @@ class Connection {
         'id': id,
         'status': status,
         'isIncoming': isIncoming,
+        // Persist lastData so it survives app restarts
+        if (lastData != null) 'lastData': lastData,
       };
 
   factory Connection.fromJson(Map<String, dynamic> json) => Connection(
@@ -52,6 +55,9 @@ class Connection {
         id: json['id'],
         status: json['status'] ?? 'accepted',
         isIncoming: json['isIncoming'] ?? false,
+        lastData: json['lastData'] != null
+            ? Map<String, dynamic>.from(json['lastData'])
+            : null,
       );
 }
 
@@ -96,8 +102,11 @@ class SocialNotifier extends StateNotifier<SocialState> {
       if (myUid == null) return;
 
       final List<Connection> updatedList = [];
+      // Track which UIDs newly became 'accepted' so we can fetch their data
+      final List<String> newlyAccepted = [];
 
-      for (var doc in snapshot.docs) {
+      final docs = snapshot.docs;
+      for (var doc in docs) {
         final data = doc.data();
         final fromUid = data['fromUid'];
         final toUid = data['toUid'];
@@ -107,34 +116,76 @@ class SocialNotifier extends StateNotifier<SocialState> {
         final peerUid = isIncoming ? fromUid : toUid;
         final peerName = isIncoming ? data['fromName'] : data['toName'];
 
+        // FIX 1: Preserve existing lastData when rebuilding the list
+        final existing = state.connections.firstWhere(
+          (c) => c.uid == peerUid,
+          orElse: () => Connection(uid: peerUid, name: peerName),
+        );
+
+        // Detect transition from pending → accepted
+        if (existing.status == 'pending' && status == 'accepted') {
+          newlyAccepted.add(peerUid);
+        }
+
         updatedList.add(Connection(
           uid: peerUid,
           name: peerName,
           id: doc.id,
           status: status,
           isIncoming: isIncoming,
+          lastData: existing.lastData, // Preserve cached data
         ));
       }
 
-      // Merge with local names if available (or just use Firestore names)
       state = state.copyWith(connections: updatedList);
       _saveToPrefs();
-      refreshAll();
+
+      // FIX 2: Fetch data for all accepted connections, prioritising newly accepted ones
+      for (final uid in newlyAccepted) {
+        refreshConnection(uid);
+      }
+      // Also refresh all other accepted connections that have no data yet
+      for (final conn in updatedList) {
+        if (conn.status == 'accepted' && conn.lastData == null && !newlyAccepted.contains(conn.uid)) {
+          refreshConnection(conn.uid);
+        }
+      }
     });
   }
 
   void _loadFromPrefs() {
     final data = _prefs.getStringList(_storageKey);
     if (data != null) {
+      // FIX 3: fromJson now restores lastData, so cached data is available immediately
       final list = data.map((e) => Connection.fromJson(jsonDecode(e))).toList();
       state = state.copyWith(connections: list);
-      refreshAll();
+      // Refresh accepted connections in background to get fresh data
+      for (final conn in list) {
+        if (conn.status == 'accepted') {
+          refreshConnection(conn.uid);
+        }
+      }
     }
   }
 
   Future<void> _saveToPrefs() async {
-    final data = state.connections.map((e) => jsonEncode(e.toJson())).toList();
+    final data = state.connections.map((e) => jsonEncode(_sanitizeForJson(e.toJson()))).toList();
     await _prefs.setStringList(_storageKey, data);
+  }
+
+  /// Recursively converts Firestore Timestamp objects to ISO 8601 strings
+  /// so the data can be safely JSON-encoded and stored in SharedPreferences.
+  dynamic _sanitizeForJson(dynamic value) {
+    if (value is Timestamp) {
+      return value.toDate().toIso8601String();
+    }
+    if (value is Map) {
+      return value.map((k, v) => MapEntry(k.toString(), _sanitizeForJson(v)));
+    }
+    if (value is List) {
+      return value.map(_sanitizeForJson).toList();
+    }
+    return value;
   }
 
   Future<bool> addConnection(String uid, String name, String myName) async {
@@ -149,6 +200,8 @@ class SocialNotifier extends StateNotifier<SocialState> {
 
   Future<void> acceptConnection(String docId) async {
     await FirebaseService().updateRelationshipStatus(docId, 'accepted');
+    // FIX 4: The Firestore listener will detect the status change and auto-fetch data.
+    // No manual action needed here — listener handles it via newlyAccepted logic.
   }
 
   Future<void> removeConnection(String uid) async {

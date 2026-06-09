@@ -17,6 +17,20 @@ class ConnectionsScreen extends ConsumerStatefulWidget {
 
 class _ConnectionsScreenState extends ConsumerState<ConnectionsScreen> {
 
+  String _formatTimestamp(dynamic value) {
+    try {
+      if (value == null) return '-';
+      if (value is Timestamp) {
+        return DateFormat('dd MMM HH:mm').format(value.toDate());
+      }
+      if (value is String) {
+        return DateFormat('dd MMM HH:mm').format(DateTime.parse(value));
+      }
+    } catch (_) {}
+    return '-';
+  }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -34,18 +48,31 @@ class _ConnectionsScreenState extends ConsumerState<ConnectionsScreen> {
           ),
         ],
       ),
-      body: socialState.connections.isEmpty
+      body: socialState.isLoading && socialState.connections.isEmpty
+          ? const Center(child: CircularProgressIndicator())
+          : socialState.connections.isEmpty
           ? _buildEmptyState(context)
-          : RefreshIndicator(
-              onRefresh: () => ref.read(socialProvider.notifier).refreshAll(),
-              child: ListView.builder(
-                padding: const EdgeInsets.all(24),
-                itemCount: socialState.connections.length,
-                itemBuilder: (context, index) {
-                  final connection = socialState.connections[index];
-                  return _buildConnectionCard(context, connection, isDark);
-                },
-              ),
+          : Stack(
+              children: [
+                RefreshIndicator(
+                  onRefresh: () => ref.read(socialProvider.notifier).refreshAll(),
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(24),
+                    itemCount: socialState.connections.length,
+                    itemBuilder: (context, index) {
+                      final connection = socialState.connections[index];
+                      return _buildConnectionCard(context, connection, isDark);
+                    },
+                  ),
+                ),
+                if (socialState.isLoading)
+                  const Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    child: LinearProgressIndicator(minHeight: 2),
+                  ),
+              ],
             ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
@@ -169,8 +196,8 @@ class _ConnectionsScreenState extends ConsumerState<ConnectionsScreen> {
           isPending
             ? (connection.isIncoming ? 'Ingin berbagi data dengan Anda' : 'Menunggu persetujuan...')
             : (data != null 
-                ? 'Terakhir update: ${DateFormat('dd MMM HH:mm').format(data['updatedAt'] is Timestamp ? (data['updatedAt'] as Timestamp).toDate() : DateTime.now())}'
-                : 'Belum ada data'),
+                ? 'Terakhir update: ${_formatTimestamp(data['updatedAt'])}'
+                : 'Data belum dipublikasikan'),
           style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)),
         ),
         trailing: isPending && connection.isIncoming
