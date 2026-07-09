@@ -35,46 +35,61 @@ class FinaWidgetProvider : HomeWidgetProvider() {
             val lastLoggedDate = widgetData.getLong("last_logged_date", 0L)
             
             val calendar = Calendar.getInstance()
-            val now = calendar.timeInMillis
             val currentHour = calendar.get(Calendar.HOUR_OF_DAY)
             
-            val lastLoggedCalendar = Calendar.getInstance()
-            lastLoggedCalendar.timeInMillis = lastLoggedDate
-            
-            val isLoggedToday = if (lastLoggedDate > 0) {
-                calendar.get(Calendar.YEAR) == lastLoggedCalendar.get(Calendar.YEAR) &&
-                calendar.get(Calendar.DAY_OF_YEAR) == lastLoggedCalendar.get(Calendar.DAY_OF_YEAR)
-            } else {
-                false
+            // Normalize calendar to date-only (midnight) for day comparison
+            val todayMidnight = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
             }
 
+            val lastLoggedCalendar = Calendar.getInstance().apply {
+                timeInMillis = lastLoggedDate
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
+
+            // Compute difference in days between today and last logged date
+            val diffMillis = todayMidnight.timeInMillis - lastLoggedCalendar.timeInMillis
+            val diffDays = (diffMillis / (1000 * 60 * 60 * 24)).toInt()
+
+            val isLoggedToday = lastLoggedDate > 0 && diffDays == 0
+
+            // If more than 1 day has passed since last activity, streak is broken.
+            // Display 0 so the widget reflects the real state even before the app is opened.
+            val displayedStreak = if (lastLoggedDate == 0L || diffDays > 1) 0 else streakCount
+
             if (isLoggedToday) {
-                // Happy state
+                // Happy state — activity recorded today
                 views.setInt(R.id.widget_container, "setBackgroundResource", R.drawable.widget_bg_happy)
                 views.setImageViewResource(R.id.widget_image, R.drawable.sunflower_cheerful)
-                views.setTextViewText(R.id.widget_title, "Streak: $streakCount Hari")
+                views.setTextViewText(R.id.widget_title, "Streak: $displayedStreak Hari")
                 views.setTextColor(R.id.widget_title, Color.parseColor("#333333"))
             } else {
-                // Withered state
+                // Withered state — activity not recorded today (or streak broken)
                 views.setImageViewResource(R.id.widget_image, R.drawable.sunflower_withered)
                 
                 when {
                     currentHour < 15 -> {
                         // Siang (Normal)
                         views.setInt(R.id.widget_container, "setBackgroundResource", R.drawable.widget_bg_normal)
-                        views.setTextViewText(R.id.widget_title, "Streak: $streakCount Hari")
+                        views.setTextViewText(R.id.widget_title, "Streak: $displayedStreak Hari")
                         views.setTextColor(R.id.widget_title, Color.parseColor("#333333"))
                     }
                     currentHour in 15..17 -> {
                         // Sore (Medium)
                         views.setInt(R.id.widget_container, "setBackgroundResource", R.drawable.widget_bg_warning)
-                        views.setTextViewText(R.id.widget_title, "Streak: $streakCount Hari")
+                        views.setTextViewText(R.id.widget_title, "Streak: $displayedStreak Hari")
                         views.setTextColor(R.id.widget_title, Color.parseColor("#E65100")) // Darker orange
                     }
                     else -> {
                         // Malam (Harsh)
                         views.setInt(R.id.widget_container, "setBackgroundResource", R.drawable.widget_bg_alert)
-                        views.setTextViewText(R.id.widget_title, "Streak: $streakCount Hari")
+                        views.setTextViewText(R.id.widget_title, "Streak: $displayedStreak Hari")
                         views.setTextColor(R.id.widget_title, Color.parseColor("#C62828")) // Darker red
                     }
                 }

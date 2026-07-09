@@ -131,13 +131,19 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                       if (sortedCategories.isEmpty)
                         _buildEmptyState('Tidak ada data pengeluaran.')
                       else
-                        ...sortedCategories.map((entry) => _buildCategoryCard(
-                              entry.key,
-                              entry.value,
-                              totalExpense,
-                              currencyFormat,
-                              budgets,
-                            )),
+                        ...sortedCategories.map((entry) {
+                          final categoryTransactions = filteredTx
+                              .where((tx) => tx.type == TransactionType.expense && tx.category == entry.key)
+                              .toList();
+                          return _buildCategoryCard(
+                            entry.key,
+                            entry.value,
+                            totalExpense,
+                            currencyFormat,
+                            budgets,
+                            categoryTransactions,
+                          );
+                        }),
                     ],
                   ),
                 ),
@@ -346,7 +352,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     );
   }
 
-  Widget _buildCategoryCard(String category, double amount, double total, NumberFormat format, List<Budget> budgets) {
+  Widget _buildCategoryCard(String category, double amount, double total, NumberFormat format, List<Budget> budgets, List<Transaction> categoryTransactions) {
     final percentageOfTotal = total == 0 ? 0.0 : amount / total;
     final budget = budgets.where((b) => b.category == category).firstOrNull;
     final hasBudget = budget != null;
@@ -355,7 +361,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     final isExceeded = hasBudget && amount > budgetLimit;
 
     return GestureDetector(
-      onTap: () => _showBudgetDialog(context, category, budget?.limitAmount),
+      onTap: () => _showCategoryActionSheet(context, category, budget?.limitAmount, categoryTransactions),
       child: Container(
         margin: const EdgeInsets.only(bottom: 20),
         padding: const EdgeInsets.all(24),
@@ -488,6 +494,137 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  void _showCategoryActionSheet(BuildContext context, String category, double? currentLimit, List<Transaction> categoryTransactions) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      backgroundColor: Theme.of(context).cardTheme.color ?? Theme.of(context).colorScheme.surface,
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 24),
+                  decoration: BoxDecoration(color: Theme.of(context).dividerColor, borderRadius: BorderRadius.circular(2)),
+                ),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+                    child: Icon(Icons.list_alt_rounded, color: Theme.of(context).colorScheme.primary),
+                  ),
+                  title: const Text('Lihat Detail Transaksi', style: TextStyle(fontWeight: FontWeight.bold)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showTransactionsBottomSheet(context, category, categoryTransactions);
+                  },
+                ),
+                const SizedBox(height: 8),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(color: Theme.of(context).colorScheme.secondary.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+                    child: Icon(Icons.edit_rounded, color: Theme.of(context).colorScheme.secondary),
+                  ),
+                  title: const Text('Atur Anggaran', style: TextStyle(fontWeight: FontWeight.bold)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showBudgetDialog(context, category, currentLimit);
+                  },
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showTransactionsBottomSheet(BuildContext context, String category, List<Transaction> transactions) {
+    transactions.sort((a, b) => b.date.compareTo(a.date));
+    final currencyFormat = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp', decimalDigits: 0);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.7,
+          minChildSize: 0.5,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (context, scrollController) {
+            return Column(
+              children: [
+                const SizedBox(height: 12),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(color: Theme.of(context).dividerColor, borderRadius: BorderRadius.circular(2)),
+                ),
+                const SizedBox(height: 16),
+                Text('Detail $category', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Theme.of(context).colorScheme.onSurface)),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: transactions.isEmpty 
+                    ? _buildEmptyState('Tidak ada transaksi.') 
+                    : ListView.separated(
+                      controller: scrollController,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                      itemCount: transactions.length,
+                      separatorBuilder: (context, index) => Divider(color: Theme.of(context).dividerColor.withOpacity(0.5)),
+                      itemBuilder: (context, index) {
+                        final tx = transactions[index];
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(_getCategoryIcon(tx.category), size: 18, color: Theme.of(context).colorScheme.onSurface),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(tx.title, style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Theme.of(context).colorScheme.onSurface)),
+                                    const SizedBox(height: 4),
+                                    Text(DateFormat('dd MMM yyyy').format(tx.date), style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5))),
+                                  ],
+                                ),
+                              ),
+                              Text(
+                                currencyFormat.format(tx.amount),
+                                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Colors.redAccent),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 

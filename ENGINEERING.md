@@ -88,7 +88,12 @@ lib/
 │   └── wallet.dart                 # Model Dompet (cash/bank/ewallet)
 ├── providers/                      # Riverpod state management
 │   ├── auth_provider.dart          # Auth state (Firebase user stream)
-│   ├── database_provider.dart      # CRUD StateNotifiers + computed providers
+│   ├── database_provider.dart      # Barrel file untuk export provider data
+│   ├── budget_provider.dart        # Budget StateNotifier
+│   ├── wallet_provider.dart        # Wallet StateNotifier & balance calculation
+│   ├── transaction_provider.dart   # Transaction StateNotifier
+│   ├── bill_provider.dart          # Bill StateNotifier
+│   ├── goal_provider.dart          # Financial Goal StateNotifier
 │   ├── navigation_provider.dart    # Bottom nav index
 │   ├── settings_provider.dart      # App settings (dark mode, notif, language)
 │   ├── social_provider.dart        # Koneksi keluarga (Firestore + local)
@@ -123,8 +128,10 @@ lib/
 │   ├── app_theme.dart              # Light + Dark ThemeData
 │   └── colors.dart                 # AppColors constants
 ├── utils/                          # Utility helpers
+│   ├── constants.dart              # Global constants (categories, config)
 │   └── currency_formatter.dart     # ThousandSeparatorFormatter + CurrencyUtils
 └── widgets/                        # Reusable UI components
+    ├── settings_tiles.dart         # Modular widget untuk pengaturan
     ├── streak_badge.dart           # Streak fire badge
     └── success_modal.dart          # Animated success dialog
 ```
@@ -219,6 +226,17 @@ class FinancialGoal {
   double get remainingAmount;   // targetAmount - savedAmount
   bool get isCompleted;         // savedAmount >= targetAmount
   int get daysRemaining;        // deadline.difference(now).inDays
+}
+```
+
+### 3.6 Connection
+
+```dart
+// File: lib/models/connection.dart
+class Connection {
+  final String uid;             // User ID koneksi
+  final String name;            // Nama pengguna
+  final DateTime connectedAt;   // Tanggal terhubung
 }
 ```
 
@@ -534,8 +552,9 @@ budgetsProvider           : StateNotifierProvider<BudgetsNotifier, List<Budget>>
 goalsProvider             : StateNotifierProvider<GoalsNotifier, List<FinancialGoal>>
 socialProvider            : StateNotifierProvider<SocialNotifier, SocialState>
 
-// ─── COMPUTED PROVIDERS ───────────────────────────────────
-walletBalanceProvider     : Provider.family<double, int>    // Saldo per wallet
+// ─── COMPUTED PROVIDERS & CACHING ─────────────────────────
+walletTransactionsProvider: Provider.family<List<Transaction>, int> // Cache tx per wallet
+walletBalanceProvider     : Provider.family<double, int>    // Saldo per wallet dari cached tx
 totalNetWorthProvider     : Provider<double>                // Total semua wallet
 ```
 
@@ -587,9 +606,14 @@ class XxxNotifier extends StateNotifier<List<Xxx>> {
 ### 6.4 Wallet Balance Calculation
 
 ```dart
-// Saldo TIDAK disimpan di DB — dihitung real-time dari transaksi
+// Saldo dihitung real-time menggunakan cache dari walletTransactionsProvider
+walletTransactionsProvider = Provider.family<List<Transaction>, int>((ref, walletId) {
+  final allTransactions = ref.watch(transactionsProvider);
+  return allTransactions.where((tx) => tx.walletId == walletId || tx.toWalletId == walletId).toList();
+});
+
 walletBalanceProvider = Provider.family<double, int>((ref, walletId) {
-  final transactions = ref.watch(transactionsProvider);
+  final transactions = ref.watch(walletTransactionsProvider(walletId));
   double balance = 0;
 
   for (var tx in transactions) {
@@ -648,7 +672,7 @@ Sub-screens (via Navigator.push):
 | Screen | Ukuran (bytes) | Fungsi Utama |
 |--------|-------------|-------------|
 | `dashboard_screen` | 32KB | Net worth, recent tx, chart, AI insight card, streak badge |
-| `settings_screen` | 35KB | Dark mode, notif, profile, backup/restore, language |
+| `settings_screen` | 25KB | Dark mode, notif, profile, backup/restore, language |
 | `bills_screen` | 25KB | List tagihan, swipe-to-pay, overdue indicator |
 | `stats_screen` | 22KB | Bar chart, pie chart, budget monitor |
 | `wallets_screen` | 21KB | Multi-wallet CRUD, balance per wallet |
@@ -1181,15 +1205,16 @@ main.dart
   ├── providers/settings_provider.dart
   └── services/streak_service.dart
 
-providers/database_provider.dart  (CENTRAL HUB)
+providers/database_provider.dart  (BARREL FILE)
+  ├── providers/budget_provider.dart
+  ├── providers/wallet_provider.dart
+  ├── providers/transaction_provider.dart
+  ├── providers/bill_provider.dart
+  └── providers/goal_provider.dart
+
+providers/wallet_provider.dart dkk
   ├── services/database_service.dart
-  ├── services/notification_service.dart
-  ├── services/local_ai_engine.dart
-  ├── services/streak_service.dart
-  ├── services/cloud_sync_service.dart
-  ├── services/auth_service.dart
-  ├── providers/settings_provider.dart
-  ├── providers/streak_provider.dart
+  ├── utils/database_backup_helper.dart
   └── models/* (semua model)
 
 providers/social_provider.dart
@@ -1266,11 +1291,12 @@ dev_dependencies:
   flutter_lints: ^3.0.0
 ```
 
-> ⚠️ **Saat ini belum ada unit test yang ditulis.** Prioritas test:
-> 1. `LocalAIEngine` — Pure logic, mudah ditest
-> 2. `walletBalanceProvider` — Kalkulasi kritis
-> 3. `DatabaseService` — CRUD integrity
-> 4. `StreakService` — Edge case streak calculation
+> ✅ **Status Testing:**
+> 9 dari 9 pengujian (Unit & Integration Tests) berhasil dilalui (100% passed).
+> 
+> Area utama yang telah diuji:
+> 1. `walletBalanceProvider` — Kalkulasi kritis & filter cache (`walletTransactionsProvider`)
+> 2. Integration: Interaksi komponen & inisialisasi dengan mock `SharedPreferences`
 
 ### 16.5 Environment Setup
 
