@@ -130,7 +130,7 @@ class FirebaseService {
       return value.toDate().toIso8601String();
     }
     if (value is Map) {
-      return value.map((k, v) => MapEntry(k.toString(), _sanitizeData(v)));
+      return value.map<String, dynamic>((k, v) => MapEntry(k.toString(), _sanitizeData(v)));
     }
     if (value is List) {
       return value.map(_sanitizeData).toList();

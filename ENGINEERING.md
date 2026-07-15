@@ -429,6 +429,9 @@ Deps:    cloud_firestore, firebase_auth
 | `updateRelationshipStatus()` | Accept/reject koneksi |
 | `streamRelationships()` | Real-time stream koneksi user |
 
+**Penanganan Data (Sanitization):**
+- `_sanitizeData()`: Digunakan untuk memparsing data dari Firestore, dengan pengetikan eksplisit `<String, dynamic>` pada `.map()` agar konversi dari JSON aman di Dart strict mode (menghindari `CastError` Map<dynamic, dynamic>).
+
 ### 5.4 CloudSyncService
 
 ```
@@ -674,7 +677,7 @@ Sub-screens (via Navigator.push):
 | `dashboard_screen` | 32KB | Net worth, recent tx, chart, AI insight card, streak badge |
 | `settings_screen` | 25KB | Dark mode, notif, profile, backup/restore, language |
 | `bills_screen` | 25KB | List tagihan, swipe-to-pay, overdue indicator |
-| `stats_screen` | 22KB | Bar chart, pie chart, budget monitor |
+| `stats_screen` | 29KB | Rekapitulasi, time-range filter (7D/30D), cash flow trend, detail pemasukan & pengeluaran |
 | `wallets_screen` | 21KB | Multi-wallet CRUD, balance per wallet |
 | `transactions_screen` | 20KB | Full transaction history, filter, swipe-to-delete |
 | `goals_screen` | 19KB | Goal cards, progress bar, add savings |
@@ -1078,6 +1081,7 @@ firestore-root/
 | `invest` | investasi, saham, reksadana, emas | Saran alokasi surplus |
 | `rekap` | rekap, detail, kategori, rincian | Top 3 kategori terboros |
 | `help` | bantuan, fitur, tolong, help | Daftar kemampuan AI |
+| `inflation` | inflasi, uang aman, runway, pensiun, masa depan | Kalkulasi prediksi uang aman untuk X tahun dengan asumsi inflasi tahunan 5% |
 
 **Fuzzy Matching:**
 - Menggunakan **Levenshtein distance** untuk toleransi typo
@@ -1316,6 +1320,20 @@ dev_dependencies:
 - [ ] Error handling: tidak ada uncaught exceptions
 - [ ] Responsive: test di light mode & dark mode
 - [ ] Tidak ada hardcoded strings (gunakan variable/constant)
+
+---
+
+## 17. Platform Integrations
+
+### 17.1 Android Home Widget (Streak Tracking)
+
+Aplikasi memiliki Android Home Widget asli (`FinaWidgetProvider.kt`) untuk melacak status aktivitas harian (streak) di layar beranda perangkat.
+- **Happy State**: Menampilkan ikon ceria (bunga matahari) jika pengguna telah mencatat aktivitas hari ini.
+- **Withered State**: Menampilkan ikon layu jika pengguna belum mencatat aktivitas hari ini. Latar belakang widget berubah warna dinamis berdasarkan waktu sebagai peringatan visual:
+  - Sebelum 15:00: Normal
+  - 15:00 - 17:00: Warning (Orange)
+  - Setelah 17:00: Alert (Red)
+- **Komunikasi Data**: Data disinkronisasi menggunakan library `home_widget` yang membaca dan menulis state (`streak_count` dan `last_logged_date`) ke `SharedPreferences`. Sinkronisasi di-trigger oleh `StreakService` (Flutter).
 
 ---
 

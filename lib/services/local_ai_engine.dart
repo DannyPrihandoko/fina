@@ -15,6 +15,7 @@ enum AIIntent {
   invest,
   rekap,
   help,
+  inflation,
   unknown
 }
 
@@ -101,6 +102,9 @@ class LocalAIEngine {
       case AIIntent.help:
         response += _getHelpResponse();
         break;
+      case AIIntent.inflation:
+        response += _getInflationResponse(transactions, savings, normalizedQuery);
+        break;
       default:
         response += _getUnknownResponse();
     }
@@ -125,6 +129,7 @@ class LocalAIEngine {
       AIIntent.invest: ['investasi', 'invest', 'saham', 'reksadana', 'emas', 'kembangkan uang', 'saran uang', 'kripto', 'crypto'],
       AIIntent.rekap: ['rekap', 'detail', 'kategori', 'paling banyak', 'habis buat apa', 'rincian', 'habis berapa'],
       AIIntent.help: ['bantuan', 'fitur', 'bisa apa', 'tolong', 'panduan', 'help', 'tanya'],
+      AIIntent.inflation: ['inflasi', 'uang aman', 'bertahan', 'biaya hidup', 'kedepan', 'masa depan', 'pensiun', 'runway', 'tahun'],
     };
 
     // 1. Direct match check
@@ -415,6 +420,99 @@ class LocalAIEngine {
         "* **\"Bandingkan dengan bulan lalu\"** (Progres Keuangan)\n"
         "* **\"Top pengeluaranku\"** (Rekap Kategori)\n\n"
         "Yuk, langsung tanya aja! Aku siap dengerin curhatan keuanganmu. 😊";
+  }
+
+  String _getInflationResponse(List<Transaction> transactions, double currentSavings, String query) {
+    final now = DateTime.now();
+    final thisMonthTx = transactions.where((tx) => 
+      tx.type == TransactionType.expense && 
+      tx.date.year == now.year && 
+      tx.date.month == now.month
+    ).toList();
+    
+    double baseMonthlyExpense = thisMonthTx.fold(0.0, (sum, tx) => sum + tx.amount);
+    
+    if (baseMonthlyExpense <= 0) {
+      baseMonthlyExpense = 3000000; // Asumsi default jika belum ada pengeluaran
+    }
+
+    final annualInflationRate = 0.05; // Asumsi inflasi 5% per tahun
+    
+    // Cek apakah user menyebutkan durasi spesifik di prompt (contoh "5 tahun" atau "6 bulan")
+    final regex = RegExp(r'(\d+)\s*(bulan|tahun)');
+    final match = regex.firstMatch(query);
+    
+    String response = "### 📈 Proyeksi Inflasi & Uang Aman\n\n";
+    response += "Berdasarkan pengeluaran bulan ini (**${currencyFormat.format(baseMonthlyExpense)}/bulan**) dan asumsi inflasi **5% per tahun**:\n\n";
+
+    if (match != null) {
+      int amount = int.tryParse(match.group(1)!) ?? 0;
+      String unit = match.group(2)!;
+      int months = unit == 'tahun' ? amount * 12 : amount;
+      
+      if (months > 0 && months <= 600) { 
+        double requiredMoney = _calculateFutureNeed(baseMonthlyExpense, months, annualInflationRate);
+        response += "* Untuk **$amount $unit** ke depan, kamu butuh dana aman sekitar **${currencyFormat.format(requiredMoney)}**.\n\n";
+        
+        if (currentSavings >= requiredMoney) {
+          response += "✅ Wah, sisa saldo kamu (**${currencyFormat.format(currentSavings)}**) saat ini sudah **CUKUP** untuk bertahan selama $amount $unit! Pertahankan!";
+        } else {
+          response += "⚠️ Saldo kamu saat ini (**${currencyFormat.format(currentSavings)}**) **BELUM CUKUP** untuk bertahan $amount $unit. Kamu masih butuh sekitar **${currencyFormat.format(requiredMoney - currentSavings)}** lagi.";
+        }
+        return response;
+      }
+    }
+
+    // Opsi waktu default
+    final options = [6, 12, 60, 120]; 
+    final labels = ['6 Bulan', '1 Tahun', '5 Tahun', '10 Tahun'];
+
+    response += "Berikut perkiraan total dana aman (runway) yang dibutuhkan untuk beberapa opsi waktu ke depan:\n\n";
+    
+    for (int i = 0; i < options.length; i++) {
+      int months = options[i];
+      double requiredMoney = _calculateFutureNeed(baseMonthlyExpense, months, annualInflationRate);
+      response += "* **${labels[i]}**: ${currencyFormat.format(requiredMoney)}\n";
+    }
+
+    response += "\n*Total di atas sudah memperhitungkan harga barang yang naik tiap tahunnya karena efek inflasi.*";
+    
+    if (currentSavings > 0) {
+      int monthsCanSurvive = 0;
+      double tempSavings = currentSavings;
+      double currentCost = baseMonthlyExpense;
+      
+      while (tempSavings >= currentCost && monthsCanSurvive < 1200) { 
+        tempSavings -= currentCost;
+        monthsCanSurvive++;
+        if (monthsCanSurvive % 12 == 0) {
+          currentCost *= (1 + annualInflationRate);
+        }
+      }
+      
+      int yearsSurvive = monthsCanSurvive ~/ 12;
+      int remMonths = monthsCanSurvive % 12;
+      String surviveText = yearsSurvive > 0 
+          ? "$yearsSurvive tahun${remMonths > 0 ? ' $remMonths bulan' : ''}" 
+          : "$monthsCanSurvive bulan";
+          
+      response += "\n\n💡 **Status Saldomu:**\nDengan sisa saldomu saat ini (**${currencyFormat.format(currentSavings)}**), kamu diperkirakan bisa bertahan selama **$surviveText** ke depan tanpa pemasukan baru.";
+    }
+
+    return response;
+  }
+
+  double _calculateFutureNeed(double monthlyExpense, int months, double annualInflationRate) {
+    double total = 0;
+    double currentCost = monthlyExpense;
+    
+    for (int i = 0; i < months; i++) {
+      total += currentCost;
+      if ((i + 1) % 12 == 0) { 
+        currentCost *= (1 + annualInflationRate);
+      }
+    }
+    return total;
   }
 
   int _calculateHealthScore(double income, double expense, double needs, double wants, double savings) {

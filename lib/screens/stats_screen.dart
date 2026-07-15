@@ -27,10 +27,12 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     double totalIncome = 0;
     double totalExpense = 0;
     Map<String, double> categorySums = {};
+    Map<String, double> incomeSums = {};
 
     for (var tx in filteredTx) {
       if (tx.type == TransactionType.income) {
         totalIncome += tx.amount;
+        incomeSums[tx.category] = (incomeSums[tx.category] ?? 0) + tx.amount;
       } else if (tx.type == TransactionType.expense) {
         totalExpense += tx.amount;
         categorySums[tx.category] = (categorySums[tx.category] ?? 0) + tx.amount;
@@ -39,7 +41,11 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
 
     final netBalance = totalIncome - totalExpense;
     final currencyFormat = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp', decimalDigits: 0);
+    
     final sortedCategories = categorySums.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+      
+    final sortedIncomeCategories = incomeSums.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
     return Scaffold(
@@ -111,6 +117,39 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: _buildTrendChart(filteredTx, _timeRange),
+                ),
+                
+                const SizedBox(height: 32),
+
+                // Income Insights Section
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Detail Pemasukan',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onSurface),
+                      ),
+                      const SizedBox(height: 24),
+                      if (sortedIncomeCategories.isEmpty)
+                        _buildEmptyState('Tidak ada data pemasukan.')
+                      else
+                        ...sortedIncomeCategories.map((entry) {
+                          final categoryTransactions = filteredTx
+                              .where((tx) => tx.type == TransactionType.income && tx.category == entry.key)
+                              .toList();
+                          return _buildCategoryCard(
+                            entry.key,
+                            entry.value,
+                            totalIncome,
+                            currencyFormat,
+                            budgets,
+                            categoryTransactions,
+                          );
+                        }),
+                    ],
+                  ),
                 ),
                 
                 const SizedBox(height: 32),

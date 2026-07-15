@@ -25,9 +25,9 @@ class _AIScreenState extends ConsumerState<AIScreen> {
 
   final List<String> _quickActions = [
     'Gimana kondisi uangku?',
-    'Analisis anggaran',
-    'Bandingkan bulan lalu',
     'Dana darurat cukup?',
+    'Simulasi inflasi 5 tahun',
+    'Bandingkan bulan lalu',
     'Top pengeluaranku',
   ];
 
