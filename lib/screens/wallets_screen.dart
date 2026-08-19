@@ -423,13 +423,20 @@ class WalletsScreen extends ConsumerWidget {
                         ref.read(walletsProvider.notifier).updateWallet(updatedWallet);
                         feedbackMessage = 'Update Berhasil!';
                       } else {
+                        final balanceText = balanceController.text.trim();
+                        final initialBalance = double.tryParse(balanceText);
+                        if (balanceText.isNotEmpty && initialBalance == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Saldo awal tidak valid, masukkan angka yang benar')),
+                          );
+                          return;
+                        }
                         final newWallet = Wallet(
                           name: nameController.text,
                           type: selectedType,
                           color: selectedColor,
                         );
-                        final initialBalance = double.tryParse(balanceController.text) ?? 0;
-                        ref.read(walletsProvider.notifier).addWallet(newWallet, initialBalance);
+                        ref.read(walletsProvider.notifier).addWallet(newWallet, initialBalance ?? 0);
                         feedbackMessage = 'Dompet Berhasil Dibuat!';
                       }
                       Navigator.pop(context); // Close bottom sheet

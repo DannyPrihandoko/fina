@@ -432,15 +432,19 @@ class GoalsScreen extends ConsumerWidget {
           TextButton(
             onPressed: () {
               final amount = double.tryParse(controller.text.replaceAll('.', '').replaceAll(',', ''));
-              if (amount != null && amount > 0) {
-                ref.read(goalsProvider.notifier).addSavings(goal, amount);
-                Navigator.pop(ctx);
+              if (amount == null || amount <= 0) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Masukkan jumlah tabungan yang valid (lebih dari Rp 0)')),
+                );
+                return;
+              }
+              ref.read(goalsProvider.notifier).addSavings(goal, amount);
+              Navigator.pop(ctx);
 
-                // Show celebration if completed
-                final newSaved = goal.savedAmount + amount;
-                if (newSaved >= goal.targetAmount) {
-                  _showSuccessDialog(context, 'Selamat! Target "${goal.title}" Tercapai! 🎉');
-                }
+              // Show celebration if completed
+              final newSaved = goal.savedAmount + amount;
+              if (newSaved >= goal.targetAmount) {
+                _showSuccessDialog(context, 'Selamat! Target "${goal.title}" Tercapai! 🎉');
               }
             },
             child: Text('TAMBAH', style: TextStyle(color: Theme.of(context).colorScheme.secondary, fontWeight: FontWeight.w900)),

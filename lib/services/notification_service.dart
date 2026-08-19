@@ -13,6 +13,12 @@ class NotificationService {
 
   final FlutterLocalNotificationsPlugin _notificationsPlugin = FlutterLocalNotificationsPlugin();
 
+  // Offset besar supaya ID reminder tagihan (berbasis bill.id yang terus bertambah/AUTOINCREMENT)
+  // tidak pernah bertabrakan dengan ID statis showSmartAlert (888) / showTestNotification (999).
+  static const int _billReminderIdOffset = 100000;
+  int _dayOfReminderId(int billId) => _billReminderIdOffset + billId * 2;
+  int _h1ReminderId(int billId) => _billReminderIdOffset + billId * 2 + 1;
+
   Future<void> init() async {
     if (kIsWeb) return; // Notifikasi lokal belum didukung di web melalui plugin ini
 
@@ -129,17 +135,11 @@ class NotificationService {
       );
 
       if (scheduledDateDayOf.isAfter(now)) {
-        await _notificationsPlugin.zonedSchedule(
-          bill.id! * 2, // Unique ID for Day Of
+        await _zonedScheduleWithFallback(
+          _dayOfReminderId(bill.id!),
           'fina: Jatuh Tempo Hari Ini',
           'Tagihan "${bill.title}" jatuh tempo hari ini sebesar ${NumberFormat.currency(symbol: 'Rp', decimalDigits: 0).format(bill.amount)}',
           scheduledDateDayOf,
-          const NotificationDetails(
-            android: AndroidNotificationDetails('bill_channel', 'Tagihan', importance: Importance.max),
-            iOS: DarwinNotificationDetails(),
-          ),
-          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-          uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
         );
       }
 
@@ -151,17 +151,11 @@ class NotificationService {
       );
 
       if (scheduledDateH1.isAfter(now)) {
-        await _notificationsPlugin.zonedSchedule(
-          bill.id! * 2 + 1, // Unique ID for H-1
+        await _zonedScheduleWithFallback(
+          _h1ReminderId(bill.id!),
           'fina: Tagihan Besok',
           'Besok tagihan "${bill.title}" akan jatuh tempo. Siapkan dana Anda!',
           scheduledDateH1,
-          const NotificationDetails(
-            android: AndroidNotificationDetails('bill_channel', 'Tagihan', importance: Importance.max),
-            iOS: DarwinNotificationDetails(),
-          ),
-          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-          uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
         );
       }
     } catch (e) {
@@ -170,9 +164,51 @@ class NotificationService {
     }
   }
 
+  /// Coba jadwalkan dengan mode exact (tepat waktu). Jika ditolak OS (izin exact-alarm
+  /// dicabut/tak diberikan di Android 12+), fallback ke mode inexact daripada diam-diam
+  /// gagal total tanpa reminder sama sekali.
+  Future<void> _zonedScheduleWithFallback(
+    int id,
+    String title,
+    String body,
+    tz.TZDateTime scheduledDate,
+  ) async {
+    const details = NotificationDetails(
+      android: AndroidNotificationDetails('bill_channel', 'Tagihan', importance: Importance.max),
+      iOS: DarwinNotificationDetails(),
+    );
+
+    try {
+      await _notificationsPlugin.zonedSchedule(
+        id,
+        title,
+        body,
+        scheduledDate,
+        details,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+      );
+    } catch (e) {
+      debugPrint('Exact alarm scheduling failed ($e), falling back to inexact schedule.');
+      try {
+        await _notificationsPlugin.zonedSchedule(
+          id,
+          title,
+          body,
+          scheduledDate,
+          details,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+        );
+      } catch (e2) {
+        debugPrint('Inexact fallback scheduling also failed: $e2');
+      }
+    }
+  }
+
   Future<void> cancelBillReminders(int billId) async {
-    await _notificationsPlugin.cancel(billId * 2);
-    await _notificationsPlugin.cancel(billId * 2 + 1);
+    await _notificationsPlugin.cancel(_dayOfReminderId(billId));
+    await _notificationsPlugin.cancel(_h1ReminderId(billId));
   }
 
   Future<void> showSmartAlert({required String title, required String body}) async {

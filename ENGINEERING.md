@@ -1,6 +1,6 @@
 # 🏗️ FINA — Engineering Documentation
 
-> **Versi**: 1.0.0 · **Terakhir diperbarui**: 9 Juni 2026  
+> **Versi**: 1.1.0 · **Terakhir diperbarui**: 19 Agustus 2026  
 > **Penulis**: Auto-generated dari analisis codebase  
 > **Tech Stack**: Flutter (Dart) · Riverpod · SQLite · Firebase · ML Kit
 
@@ -24,6 +24,8 @@
 14. [Notification System](#14-notification-system)
 15. [Dependency Map](#15-dependency-map)
 16. [Konvensi & Panduan Pengembangan](#16-konvensi--panduan-pengembangan)
+17. [Platform Integrations](#17-platform-integrations)
+18. [Known Issues & Bug Backlog](#18-known-issues--bug-backlog)
 
 ---
 
@@ -605,6 +607,8 @@ class XxxNotifier extends StateNotifier<List<Xxx>> {
 **Side effects setelah setiap mutasi:**
 1. `loadXxx()` — Refresh state dari DB
 2. `_triggerBackup(ref)` — Background cloud backup (jika user signed in)
+
+> ⚠️ **Koreksi:** Implementasi nyata bukan method privat `_triggerBackup()` di tiap notifier, melainkan `DatabaseBackupHelper.triggerBackup(ref)` — class statis yang didefinisikan langsung di `lib/providers/database_provider.dart` (bukan file terpisah `utils/database_backup_helper.dart` seperti disebut di beberapa versi dokumen sebelumnya). Semua provider CRUD memanggil `DatabaseBackupHelper.triggerBackup(ref)` dari situ.
 
 ### 6.4 Wallet Balance Calculation
 
@@ -1193,7 +1197,8 @@ Test:          ID = 999 (static)
 | `image_picker` | ^1.1.2 | OCR | Camera/gallery picker |
 | `google_mlkit_text_recognition` | ^0.13.0 | OCR | On-device text recognition |
 | `flutter_launcher_icons` | ^0.13.1 | Build | App icon generation |
-| `home_widget` | ^0.9.1 | Widget | Android home screen widget |
+| `home_widget` | ^0.8.0 | Widget | Android home screen widget |
+| `sqflite_common_ffi` | ^2.4.0+3 | Dev/Test | `databaseFactoryFfi` untuk widget test yang menyentuh `DatabaseService` sungguhan (lihat `test/app_ui_test.dart`) |
 
 ### 15.2 Internal Dependency Graph
 
@@ -1218,7 +1223,7 @@ providers/database_provider.dart  (BARREL FILE)
 
 providers/wallet_provider.dart dkk
   ├── services/database_service.dart
-  ├── utils/database_backup_helper.dart
+  ├── providers/database_provider.dart  (DatabaseBackupHelper.triggerBackup)
   └── models/* (semua model)
 
 providers/social_provider.dart
@@ -1295,12 +1300,15 @@ dev_dependencies:
   flutter_lints: ^3.0.0
 ```
 
-> ✅ **Status Testing:**
-> 9 dari 9 pengujian (Unit & Integration Tests) berhasil dilalui (100% passed).
+> ✅ **Status Testing (diverifikasi ulang 19 Agustus 2026 via `flutter test`):**
+> 9 dari 9 pengujian (Unit & Integration Tests) berhasil dilalui (100% passed, exit code 0).
 > 
 > Area utama yang telah diuji:
 > 1. `walletBalanceProvider` — Kalkulasi kritis & filter cache (`walletTransactionsProvider`)
 > 2. Integration: Interaksi komponen & inisialisasi dengan mock `SharedPreferences`
+> 3. Singleton/DI (`LocalAIEngine`, `OCRService`, `StreakService`), serialisasi model, benchmark performa `LocalAIEngine`
+>
+> ✅ **Update 19 Agustus 2026:** `test/app_ui_test.dart` ("Button Click Test") sebelumnya hanya mencetak jumlah tombol tanpa `expect()` apa pun (selalu "lulus" walau 0 tombol ditemukan). Sudah ditulis ulang dengan assertion nyata (`expect(totalTappable, greaterThan(0))`), memompa `MainScreen` langsung dengan `databaseFactoryFfi` (`sqflite_common_ffi`, dev dependency baru) agar provider berbasis database bisa diuji sungguhan. Detail riwayat bug ini ada di [Bagian 18](#18-known-issues--bug-backlog).
 
 ### 16.5 Environment Setup
 
@@ -1334,6 +1342,67 @@ Aplikasi memiliki Android Home Widget asli (`FinaWidgetProvider.kt`) untuk melac
   - 15:00 - 17:00: Warning (Orange)
   - Setelah 17:00: Alert (Red)
 - **Komunikasi Data**: Data disinkronisasi menggunakan library `home_widget` yang membaca dan menulis state (`streak_count` dan `last_logged_date`) ke `SharedPreferences`. Sinkronisasi di-trigger oleh `StreakService` (Flutter).
+
+---
+
+## 18. Known Issues & Bug Backlog
+
+> Hasil audit codebase 19 Agustus 2026 (analisis statis + `flutter test`). **Status: semua 20 item di bawah sudah diperbaiki pada 19 Agustus 2026** (lihat commit terkait) dan diverifikasi lulus `flutter analyze` + `flutter test` (9/9 pass). Bagian ini dipertahankan sebagai riwayat/referensi — jangan dihapus. Jika menemukan bug baru, tambahkan entri baru dengan format yang sama.
+
+### 🔴 Kritis (crash / kehilangan data diam-diam)
+
+- [x] **Crash: `double.parse` tanpa validasi di form Target Finansial**
+  `lib/screens/add_goal_screen.dart` (field `_savedController`). Jika field "SUDAH TERKUMPUL" dikosongkan lalu tombol simpan ditekan, `double.parse('')` melempar `FormatException` yang tidak tertangkap → aplikasi crash saat edit goal.
+  **Fix diterapkan**: tambah `validator` pada field + ganti `double.parse` jadi `double.tryParse(...) ?? 0` di `_saveGoal()`.
+
+- [x] **Crash relokasi: kegagalan Firebase init hanya di-`debugPrint`, lalu crash di layar lain**
+  `lib/main.dart` menelan error `Firebase.initializeApp()` dan tetap `runApp()`, tapi `AuthService`/`FirebaseService`/`CloudSyncService` mengakses `FirebaseAuth.instance`/`FirebaseFirestore.instance` sebagai field initializer yang throw sinkron jika belum ada default Firebase App.
+  **Fix diterapkan**: ketiga service diubah agar mengecek `Firebase.apps.isNotEmpty` sebelum menyentuh instance Firebase — `AuthService`/`FirebaseService` via getter nullable (`_authOrNull`/`_dbOrNull`, return `null`/no-op jika belum siap), `CloudSyncService` via lazy getter yang throw *di dalam* try/catch method publiknya (bukan saat konstruksi). Konstruksi singleton-nya sendiri kini aman dipanggil kapan pun.
+
+- [x] **Silent data loss: status koneksi sosial bisa ter-overwrite balik ke `pending`**
+  `lib/services/firebase_service.dart` (`requestRelationship`) menulis dengan `.set()` tanpa `merge` ke doc id yang sama yang dipakai kedua user; `removeConnection` hanya filter state lokal, tidak pernah hapus dokumen Firestore.
+  **Fix diterapkan**: `requestRelationship` sekarang cek dokumen existing dulu — no-op jika status sudah `accepted` (tidak ditimpa balik jadi pending) — dan pakai `SetOptions(merge: true)`. Ditambahkan `FirebaseService.deleteRelationship()` yang benar-benar dipanggil dari `SocialNotifier.removeConnection()`. UI tolak/hapus koneksi ditambahkan di `connections_screen.dart` (swipe-to-delete + tombol TOLAK untuk request masuk).
+
+- [x] **Silent data loss: kegagalan auto-backup ke cloud sepenuhnya tidak terlihat**
+  `CloudSyncService.backupAll`/`DatabaseBackupHelper.triggerBackup` menelan semua exception dengan `debugPrint` saja, tanpa jalur feedback UI.
+  **Fix diterapkan**: `SettingsState` sekarang punya `lastBackupStatus`/`lastBackupAt` (persisted via SharedPreferences), diisi oleh `SettingsNotifier.recordBackupResult()` yang dipanggil dari `DatabaseBackupHelper.triggerBackup` di kedua cabang (sukses/gagal). Settings screen menampilkan banner merah "Backup otomatis terakhir gagal" saat status terakhir `failed`.
+
+### 🟠 Tinggi (kesimpulan finansial yang salah ke pengguna)
+
+- [x] **Salah hitung dana darurat: memakai total pengeluaran *seumur hidup* sebagai "rata-rata bulanan"**
+  `local_ai_engine.dart` `_getSavingsResponse` memakai `expense` (lifetime) sebagai `monthlyAvg`, melipatgandakan target dana darurat untuk user dengan riwayat panjang.
+  **Fix diterapkan**: `processQuery` sekarang menghitung `thisMonthExpense` (difilter ke bulan berjalan, pola yang sama dengan `_getInflationResponse`) dan meneruskannya ke `_getSavingsResponse` sebagai basis "rata-rata bulanan", bukan total lifetime.
+
+- [x] **Kategori "Needs" tidak mencakup semua kategori tagihan → skor kesehatan finansial terlalu optimis**
+  Daftar needs tidak mencakup `internet`, `sewa`, `asuransi` (kategori tagihan asli di `constants.dart`), dan kategori tak dikenal (termasuk `lainnya`) di-drop total dari perhitungan.
+  **Fix diterapkan**: `internet`, `sewa`, `asuransi` ditambahkan ke daftar needs; semua kategori lain yang tak dikenal kini jatuh ke bucket `wants` (default konservatif) alih-alih hilang dari perhitungan sama sekali.
+
+- [x] **Silent failure: publish snapshot ke cloud tanpa error handling**
+  `share_data_screen.dart` `_publishData()` punya `try { ... } finally { ... }` tanpa `catch`, dan selalu menampilkan pesan sukses walau publish gagal secara internal.
+  **Fix diterapkan**: `FirebaseService.publishSnapshot()` sekarang mengembalikan `bool` (sukses/gagal), dan `_publishData()` menampilkan SnackBar sukses/gagal sesuai hasil sebenarnya, plus `catch` untuk exception tak terduga.
+
+### 🟡 Sedang (fitur tidak berfungsi / diam-diam gagal)
+
+- [x] **Tidak ada tombol tolak/hapus koneksi** — ditambahkan swipe-to-delete (dengan dialog konfirmasi) untuk koneksi accepted/outgoing-pending, dan tombol TOLAK (ikon X merah) di samping ACC untuk request masuk, di `connections_screen.dart`.
+- [x] **Pengaturan Bahasa (language selector) tidak berefek apa pun** — opsi "English" sekarang ditandai badge "SEGERA HADIR" dan menampilkan dialog info jujur (mengikuti pola `_showBiometricInfo` yang sudah ada) alih-alih pura-pura berhasil menerapkan bahasa yang sebenarnya tidak berubah.
+- [x] **Reminder tagihan tidak dibatalkan saat lunas** — `BillsNotifier.payBill()` sekarang memanggil `NotificationService().cancelBillReminders(bill.id!)` sebelum membuat transaksi pembayaran.
+- [x] **Tabrakan ID notifikasi** — skema ID reminder tagihan diberi offset besar (`100000 + bill.id*2` / `+1`) via helper `_dayOfReminderId`/`_h1ReminderId`, sehingga tidak mungkin lagi bertabrakan dengan ID statis `888`/`999`.
+- [x] **Exact-alarm permission gagal tanpa fallback** — ditambahkan `_zonedScheduleWithFallback()`: coba `exactAllowWhileIdle` dulu, jika gagal (mis. izin dicabut) otomatis fallback ke `inexactAllowWhileIdle` alih-alih diam-diam tidak menjadwalkan apa pun.
+- [x] **Off-by-one batas "bulan lalu" di deteksi anomali** — `lastMonthEnd` diubah dari `DateTime(y, m, 0)` (00:00:00) menjadi `DateTime(y, m, 0, 23, 59, 59)`, konsisten dengan pola di `stats_screen.dart`.
+- [x] **Pembagian oleh nol pada Budget** — ditambahkan guard `limitAmount > 0` sebelum pembagian di `local_ai_engine.dart` (`_getBudgetResponse`), `dashboard_screen.dart`, dan `stats_screen.dart`; form "Atur Anggaran" di `stats_screen.dart` sekarang menolak input ≤ 0 dengan SnackBar.
+
+### 🟢 Rendah (edge case / kosmetik)
+
+- [x] Saldo awal wallet negatif — `.abs()` dihapus dari `wallet_provider.dart` sehingga saldo awal negatif (representasi utang) benar-benar mengurangi saldo, bukan ditambahkan sebagai kredit.
+- [x] `wallets_screen.dart` — input saldo awal sekarang divalidasi; input non-numerik menampilkan SnackBar error alih-alih diam-diam jadi `0`.
+- [x] `goals_screen.dart` — dialog "Tambah Tabungan" sekarang menampilkan SnackBar jika input invalid/≤0, alih-alih diam saja.
+- [x] `AuthService.signOut()` — dipecah jadi 2 try/catch terpisah (Google, Firebase) supaya satu kegagalan tidak menutupi kegagalan lainnya.
+- [x] `FinancialGoal.fromMap`, `Bill.fromMap`, dan `Transaction.fromMap` — ditambahkan `.toDouble()` yang konsisten pada semua field numerik (sebelumnya `Transaction.amount`/`Bill.amount`/`FinancialGoal.targetAmount`/`savedAmount` tidak dikonversi, berisiko error tipe saat restore dari cloud jika Firestore mengembalikan `int`).
+- [x] Test `app_ui_test.dart` "Button Click Test" — ditulis ulang dengan assertion nyata (`expect(totalTappable, greaterThan(0))`), memompa `MainScreen` langsung dengan `sqflite_common_ffi` (`databaseFactoryFfi`) supaya provider berbasis database bisa diuji sungguhan tanpa perlu mock manual.
+
+### Catatan untuk audit berikutnya
+
+Saat menemukan bug baru, tambahkan entri dengan format yang sama (file:line, skenario kegagalan, fix) di bagian yang sesuai tingkat keparahannya, dan jangan hapus histori item yang sudah `[x]` — itu adalah dokumentasi bahwa bug tersebut sudah pernah ada dan sudah ditangani.
 
 ---
 

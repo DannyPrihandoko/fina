@@ -128,11 +128,65 @@ class _ConnectionsScreenState extends ConsumerState<ConnectionsScreen> {
     );
   }
 
+  Future<bool> _confirmRemove(BuildContext context, String title, String message) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('BATAL', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textMuted)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('HAPUS', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.error)),
+          ),
+        ],
+      ),
+    );
+    return confirmed ?? false;
+  }
+
   Widget _buildConnectionCard(BuildContext context, Connection connection, bool isDark) {
     final data = connection.lastData;
     final totalBalance = data?['recap']?['totalBalance'] ?? 0.0;
     final isPending = connection.status == 'pending';
-    
+    final isIncomingRequest = isPending && connection.isIncoming;
+
+    if (isIncomingRequest) {
+      return _buildCardContent(context, connection, isDark, data, totalBalance, isPending);
+    }
+
+    // Koneksi accepted atau permintaan keluar (outgoing pending) bisa dihapus/dibatalkan via swipe.
+    return Dismissible(
+      key: ValueKey(connection.uid),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        decoration: BoxDecoration(
+          color: AppColors.error.withOpacity(0.85),
+          borderRadius: BorderRadius.circular(24),
+        ),
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: const Icon(Icons.delete_outline_rounded, color: Colors.white),
+      ),
+      confirmDismiss: (_) => _confirmRemove(
+        context,
+        isPending ? 'Batalkan Permintaan?' : 'Hapus Hubungan?',
+        isPending
+            ? 'Permintaan koneksi ke ${connection.name} akan dibatalkan.'
+            : 'Hubungan dengan ${connection.name} akan dihapus dan tidak bisa melihat data satu sama lain lagi.',
+      ),
+      onDismissed: (_) => ref.read(socialProvider.notifier).removeConnection(connection.uid),
+      child: _buildCardContent(context, connection, isDark, data, totalBalance, isPending),
+    );
+  }
+
+  Widget _buildCardContent(BuildContext context, Connection connection, bool isDark, Map<String, dynamic>? data, dynamic totalBalance, bool isPending) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -201,16 +255,36 @@ class _ConnectionsScreenState extends ConsumerState<ConnectionsScreen> {
           style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)),
         ),
         trailing: isPending && connection.isIncoming
-          ? FilledButton(
-              onPressed: () => ref.read(socialProvider.notifier).acceptConnection(connection.id!),
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-                visualDensity: VisualDensity.compact,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              child: const Text('ACC', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.close_rounded, size: 20, color: AppColors.error),
+                  visualDensity: VisualDensity.compact,
+                  tooltip: 'Tolak',
+                  onPressed: () async {
+                    final confirmed = await _confirmRemove(
+                      context,
+                      'Tolak Permintaan?',
+                      'Permintaan koneksi dari ${connection.name} akan ditolak.',
+                    );
+                    if (confirmed) {
+                      ref.read(socialProvider.notifier).removeConnection(connection.uid);
+                    }
+                  },
+                ),
+                FilledButton(
+                  onPressed: () => ref.read(socialProvider.notifier).acceptConnection(connection.id!),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                    visualDensity: VisualDensity.compact,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('ACC', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                ),
+              ],
             )
-          : (!isPending 
+          : (!isPending
               ? Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.end,

@@ -47,16 +47,24 @@ class LocalAIEngine {
     double expense = 0;
     double needs = 0;
     double wants = 0;
-    
+    final now = DateTime.now();
+    double thisMonthExpense = 0;
+
     for (var tx in transactions) {
       if (tx.type == TransactionType.income) {
         income += tx.amount;
       } else if (tx.type == TransactionType.expense) {
         expense += tx.amount;
+        if (tx.date.year == now.year && tx.date.month == now.month) {
+          thisMonthExpense += tx.amount;
+        }
         final cat = tx.category.toLowerCase();
-        if (['makanan', 'transportasi', 'kesehatan', 'cicilan', 'tagihan', 'listrik', 'air'].contains(cat)) {
+        if (['makanan', 'transportasi', 'kesehatan', 'cicilan', 'tagihan', 'listrik', 'air', 'internet', 'sewa', 'asuransi'].contains(cat)) {
           needs += tx.amount;
-        } else if (['hiburan', 'belanja', 'hobi', 'jajan', 'nonton'].contains(cat)) {
+        } else {
+          // 'hiburan', 'belanja', 'hobi', 'jajan', 'nonton', dan kategori tak dikenal (mis. 'Lainnya')
+          // dianggap discretionary (wants) — lebih aman daripada di-drop diam-diam dari perhitungan,
+          // dan tidak menutupi overspending sebagai "kebutuhan" pada skor kesehatan finansial.
           wants += tx.amount;
         }
       }
@@ -82,7 +90,7 @@ class LocalAIEngine {
         response += _getAnalysisResponse(income, expense, needs, wants, savings);
         break;
       case AIIntent.savings:
-        response += _getSavingsResponse(income, expense, savings);
+        response += _getSavingsResponse(income, thisMonthExpense, savings);
         break;
       case AIIntent.bills:
         response += _getBillsResponse(bills, savings);
@@ -251,8 +259,11 @@ class LocalAIEngine {
     return response;
   }
 
-  String _getSavingsResponse(double income, double expense, double savings) {
-    double monthlyAvg = expense > 0 ? expense : 1000000;
+  String _getSavingsResponse(double income, double monthlyExpense, double savings) {
+    // monthlyExpense harus sudah discope ke bulan berjalan oleh caller —
+    // jangan pernah pakai total pengeluaran seumur pakai (lifetime) di sini,
+    // karena akan melipatgandakan target dana darurat untuk user dengan riwayat panjang.
+    double monthlyAvg = monthlyExpense > 0 ? monthlyExpense : 1000000;
     double target = monthlyAvg * 3;
     
     String response = "### 🛡️ Evaluasi Dana Darurat\n\n";
@@ -329,10 +340,10 @@ class LocalAIEngine {
 
     for (var b in budgets) {
       final spent = thisMonthTx.where((tx) => tx.category == b.category).fold(0.0, (sum, tx) => sum + tx.amount);
-      final percent = (spent / b.limitAmount) * 100;
-      
+      final percent = b.limitAmount > 0 ? (spent / b.limitAmount) * 100 : 0.0;
+
       response += "* **${b.category}**: `${percent.toStringAsFixed(0)}%` terpakai (${currencyFormat.format(spent)})\n";
-      if (spent > b.limitAmount) anyExceeded = true;
+      if (b.limitAmount > 0 && spent > b.limitAmount) anyExceeded = true;
     }
 
     response += "\n";
@@ -653,7 +664,7 @@ class LocalAIEngine {
     
     // 1. Calculate Previous Month Total
     final lastMonthStart = DateTime(now.year, now.month - 1, 1);
-    final lastMonthEnd = DateTime(now.year, now.month, 0); // Last day of prev month
+    final lastMonthEnd = DateTime(now.year, now.month, 0, 23, 59, 59); // Akhir hari terakhir bulan lalu
     
     final lastMonthTxs = transactions.where((tx) => 
       tx.type == TransactionType.expense && 

@@ -125,8 +125,9 @@ class SocialNotifier extends StateNotifier<SocialState> {
   }
 
   Future<void> removeConnection(String uid) async {
-    // Ideally also remove from Firestore, but for now just local filter is fine 
-    // or we can implement deleteRelationship in FirebaseService later.
+    // Hapus dokumen relationship di Firestore dulu agar tidak bisa ter-overwrite
+    // balik jadi 'pending' saat salah satu pihak request ulang di kemudian hari.
+    await _firebaseService.deleteRelationship(uid);
     state = state.copyWith(
       connections: state.connections.where((e) => e.uid != uid).toList(),
     );

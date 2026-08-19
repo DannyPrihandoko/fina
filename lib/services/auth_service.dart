@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -21,19 +22,32 @@ class AuthService {
   static const String _webClientId =
       '950683922466-psqrm6shpqeo71qf1b3kt7j100c9utld.apps.googleusercontent.com';
 
-  final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     clientId: kIsWeb ? _webClientId : null,
     serverClientId: _webClientId,
     scopes: <String>['email', 'profile'],
   );
 
-  User? get currentUser => _auth.currentUser;
+  /// `false` jika `Firebase.initializeApp()` gagal di startup (mis. config salah/hilang).
+  /// Semua getter/method di bawah harus mengecek ini dulu sebelum menyentuh `FirebaseAuth.instance`,
+  /// karena itu melempar exception sinkron jika belum ada default Firebase App.
+  bool get isFirebaseReady => Firebase.apps.isNotEmpty;
+
+  FirebaseAuth? get _authOrNull => isFirebaseReady ? FirebaseAuth.instance : null;
+
+  User? get currentUser => _authOrNull?.currentUser;
   bool get isSignedIn =>
-      _auth.currentUser != null && !(_auth.currentUser!.isAnonymous);
-  Stream<User?> get authStateChanges => _auth.authStateChanges();
+      currentUser != null && !(currentUser!.isAnonymous);
+  Stream<User?> get authStateChanges =>
+      _authOrNull?.authStateChanges() ?? const Stream<User?>.empty();
 
   Future<User?> signInWithGoogle() async {
+    if (!isFirebaseReady) {
+      throw const AuthServiceException(
+        'Firebase belum siap. Coba tutup dan buka ulang aplikasi.',
+      );
+    }
+    final auth = _authOrNull!;
     try {
       debugPrint('AuthService: Starting Google Sign-In...');
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
@@ -52,7 +66,7 @@ class AuthService {
         idToken: googleAuth.idToken,
       );
 
-      final currentUser = _auth.currentUser;
+      final currentUser = auth.currentUser;
       if (currentUser != null && currentUser.isAnonymous) {
         try {
           final linkedResult = await currentUser.linkWithCredential(credential);
@@ -69,7 +83,7 @@ class AuthService {
       }
 
       final UserCredential result =
-          await _auth.signInWithCredential(credential);
+          await auth.signInWithCredential(credential);
       debugPrint(
           'AuthService: Firebase Sign-In successful for ${result.user?.email}');
       return result.user;
@@ -96,13 +110,19 @@ class AuthService {
   }
 
   Future<void> signOut() async {
+    // Dipisah jadi 2 try-catch: kalau Google sign-out gagal, tetap coba Firebase
+    // sign-out (dan sebaliknya), supaya satu kegagalan tidak menutupi kegagalan lain.
     try {
       await _googleSignIn.signOut();
-      await _auth.signOut();
-      debugPrint('AuthService: Signed out');
     } catch (e) {
-      debugPrint('AuthService: Sign out failed: $e');
+      debugPrint('AuthService: Google sign out failed: $e');
     }
+    try {
+      await _authOrNull?.signOut();
+    } catch (e) {
+      debugPrint('AuthService: Firebase sign out failed: $e');
+    }
+    debugPrint('AuthService: Signed out (Firebase user now: ${currentUser?.uid ?? 'null'})');
   }
 
   bool _shouldFallbackToSignIn(String code) {

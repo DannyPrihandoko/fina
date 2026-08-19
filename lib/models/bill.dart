@@ -36,7 +36,7 @@ class Bill {
     return Bill(
       id: map['id'],
       title: map['title'],
-      amount: map['amount'],
+      amount: (map['amount'] as num).toDouble(),
       dueDate: DateTime.parse(map['dueDate']),
       category: map['category'],
       isRecurring: map['isRecurring'] == 1,

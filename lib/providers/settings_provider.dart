@@ -19,6 +19,8 @@ class SettingsState {
   final String languageCode;
   final String userName;
   final String? profilePhotoPath;
+  final String? lastBackupStatus; // 'success' | 'failed' | null (belum pernah backup)
+  final String? lastBackupAt; // ISO 8601 string
 
   SettingsState({
     required this.isNotificationsEnabled,
@@ -28,6 +30,8 @@ class SettingsState {
     required this.languageCode,
     required this.userName,
     this.profilePhotoPath,
+    this.lastBackupStatus,
+    this.lastBackupAt,
   });
 
   SettingsState copyWith({
@@ -38,6 +42,8 @@ class SettingsState {
     String? languageCode,
     String? userName,
     String? profilePhotoPath,
+    String? lastBackupStatus,
+    String? lastBackupAt,
   }) {
     return SettingsState(
       isNotificationsEnabled:
@@ -48,6 +54,8 @@ class SettingsState {
       languageCode: languageCode ?? this.languageCode,
       userName: userName ?? this.userName,
       profilePhotoPath: profilePhotoPath ?? this.profilePhotoPath,
+      lastBackupStatus: lastBackupStatus ?? this.lastBackupStatus,
+      lastBackupAt: lastBackupAt ?? this.lastBackupAt,
     );
   }
 }
@@ -62,6 +70,8 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   static const _languageKey = 'language_code';
   static const _userNameKey = 'user_name';
   static const _photoKey = 'profile_photo_path';
+  static const _lastBackupStatusKey = 'last_backup_status';
+  static const _lastBackupAtKey = 'last_backup_at';
 
   SettingsNotifier(this._prefs)
       : super(SettingsState(
@@ -72,6 +82,8 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
           languageCode: _prefs.getString(_languageKey) ?? 'id',
           userName: _prefs.getString(_userNameKey) ?? 'User Fina',
           profilePhotoPath: _prefs.getString(_photoKey),
+          lastBackupStatus: _prefs.getString(_lastBackupStatusKey),
+          lastBackupAt: _prefs.getString(_lastBackupAtKey),
         ));
 
   Future<void> setNotificationsEnabled(bool value) async {
@@ -116,5 +128,15 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       await _prefs.setString(_photoKey, path);
     }
     state = state.copyWith(profilePhotoPath: path);
+  }
+
+  /// Dipanggil oleh [DatabaseBackupHelper] setiap kali backup otomatis ke cloud selesai,
+  /// agar kegagalan backup tidak lagi sepenuhnya tersembunyi dari user (lihat Settings).
+  Future<void> recordBackupResult(bool success) async {
+    final status = success ? 'success' : 'failed';
+    final timestamp = DateTime.now().toIso8601String();
+    await _prefs.setString(_lastBackupStatusKey, status);
+    await _prefs.setString(_lastBackupAtKey, timestamp);
+    state = state.copyWith(lastBackupStatus: status, lastBackupAt: timestamp);
   }
 }

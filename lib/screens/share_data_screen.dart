@@ -57,11 +57,21 @@ class _ShareDataScreenState extends ConsumerState<ShareDataScreen> with SingleTi
 
       final settings = ref.read(settingsProvider);
 
-      await FirebaseService().publishSnapshot(snapshot, userName: settings.userName);
-      
+      final success = await FirebaseService().publishSnapshot(snapshot, userName: settings.userName);
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Data berhasil dipublikasikan!')),
+          SnackBar(
+            content: Text(success
+                ? 'Data berhasil dipublikasikan!'
+                : '❌ Gagal mempublikasikan data. Periksa koneksi internet Anda dan coba lagi.'),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('❌ Gagal mempublikasikan data: $e')),
         );
       }
     } finally {

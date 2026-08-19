@@ -75,6 +75,8 @@ class BillsNotifier extends StateNotifier<List<Bill>> {
   Future<void> payBill(Bill bill, int walletId) async {
     final paidBill = bill.copyWith(isPaid: true);
     await _dbService.updateBill(paidBill);
+    // Tagihan yang sudah lunas tidak boleh lagi mengirim reminder jatuh tempo.
+    await NotificationService().cancelBillReminders(bill.id!);
 
     final transaction = Transaction(
       title: 'Bayar: ${bill.title}',

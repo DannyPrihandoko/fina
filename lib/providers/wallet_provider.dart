@@ -28,7 +28,9 @@ class WalletsNotifier extends StateNotifier<List<Wallet>> {
     if (initialBalance != 0) {
       final initialTx = Transaction(
         title: 'Saldo Awal: ${wallet.name}',
-        amount: initialBalance.abs(),
+        // Jangan di-abs(): saldo awal negatif (mis. representasi utang di wallet kartu kredit)
+        // harus tetap mengurangi saldo, bukan malah ditambahkan sebagai kredit.
+        amount: initialBalance,
         type: TransactionType.initial,
         category: 'Initial',
         date: DateTime.now(),

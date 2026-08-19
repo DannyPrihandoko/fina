@@ -35,8 +35,10 @@ class DatabaseBackupHelper {
           userName: settings.userName,
           photoUrl: user.photoURL,
         );
+        await ref.read(settingsProvider.notifier).recordBackupResult(true);
       } catch (e) {
         debugPrint('BackupHelper: Backup failed: $e');
+        await ref.read(settingsProvider.notifier).recordBackupResult(false);
       }
     });
   }

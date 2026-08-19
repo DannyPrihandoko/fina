@@ -78,7 +78,7 @@ class _AddGoalScreenState extends ConsumerState<AddGoalScreen> {
       id: widget.editGoal?.id,
       title: _titleController.text.trim(),
       targetAmount: double.parse(_amountController.text.replaceAll('.', '').replaceAll(',', '')),
-      savedAmount: double.parse(_savedController.text.replaceAll('.', '').replaceAll(',', '')),
+      savedAmount: double.tryParse(_savedController.text.replaceAll('.', '').replaceAll(',', '')) ?? 0,
       deadline: _deadline,
       icon: _selectedIcon,
       color: _selectedColor,
@@ -207,6 +207,12 @@ class _AddGoalScreenState extends ConsumerState<AddGoalScreen> {
                 keyboardType: TextInputType.number,
                 style: TextStyle(fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.onSurface),
                 decoration: _buildInputDecoration(context, '0', prefixText: 'Rp '),
+                validator: (v) {
+                  if (v == null || v.trim().isEmpty) return null; // kosong = dianggap 0
+                  final parsed = double.tryParse(v.replaceAll('.', '').replaceAll(',', ''));
+                  if (parsed == null || parsed < 0) return 'Masukkan angka yang valid';
+                  return null;
+                },
               ),
               const SizedBox(height: 24),
             ],

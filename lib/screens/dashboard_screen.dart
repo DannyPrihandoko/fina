@@ -484,7 +484,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   .where((tx) => tx.category == budget.category)
                   .fold(0.0, (sum, tx) => sum + tx.amount);
               
-              final percent = (spent / budget.limitAmount).clamp(0.0, 1.0);
+              final percent = budget.limitAmount > 0 ? (spent / budget.limitAmount).clamp(0.0, 1.0) : 0.0;
               final isExceeded = spent > budget.limitAmount;
 
               return Container(

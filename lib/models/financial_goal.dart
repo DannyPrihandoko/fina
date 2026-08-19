@@ -42,8 +42,8 @@ class FinancialGoal {
     return FinancialGoal(
       id: map['id'],
       title: map['title'],
-      targetAmount: map['targetAmount'],
-      savedAmount: map['savedAmount'] ?? 0,
+      targetAmount: (map['targetAmount'] as num).toDouble(),
+      savedAmount: ((map['savedAmount'] ?? 0) as num).toDouble(),
       deadline: DateTime.parse(map['deadline']),
       icon: map['icon'] ?? '🎯',
       color: map['color'] ?? '0xFF00BFA5',

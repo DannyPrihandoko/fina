@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import '../models/transaction.dart';
 import '../models/wallet.dart';
@@ -11,7 +12,15 @@ class CloudSyncService {
   factory CloudSyncService() => _instance;
   CloudSyncService._internal();
 
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  // Getter (bukan `final` field) supaya konstruksi singleton ini sendiri tidak menyentuh
+  // FirebaseFirestore.instance. Jika Firebase gagal init, lempar di sini — semua caller
+  // di bawah sudah membungkusnya dengan try/catch, jadi jadi silent-fail yang aman, bukan crash.
+  FirebaseFirestore get _db {
+    if (Firebase.apps.isEmpty) {
+      throw StateError('Firebase belum siap (init gagal saat startup).');
+    }
+    return FirebaseFirestore.instance;
+  }
 
   // Reference to the user's backup document
   DocumentReference _userRef(String uid) => _db.collection('users').doc(uid);

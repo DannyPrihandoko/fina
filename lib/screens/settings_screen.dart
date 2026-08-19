@@ -241,8 +241,9 @@ class SettingsScreen extends ConsumerWidget {
                 context,
                 code: 'en',
                 label: 'English',
-                description: 'English preference for future localization',
+                description: 'Segera hadir — seluruh teks aplikasi masih Bahasa Indonesia',
                 selected: currentCode == 'en',
+                comingSoon: true,
               ),
             ],
           ),
@@ -267,9 +268,12 @@ class SettingsScreen extends ConsumerWidget {
     required String label,
     required String description,
     required bool selected,
+    bool comingSoon = false,
   }) {
     return ListTile(
-      onTap: () => Navigator.pop(context, code),
+      onTap: comingSoon
+          ? () => _showLanguageComingSoonInfo(context)
+          : () => Navigator.pop(context, code),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       tileColor: selected
@@ -294,11 +298,48 @@ class SettingsScreen extends ConsumerWidget {
               : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
         ),
       ),
-      title: Text(label, style: const TextStyle(fontWeight: FontWeight.w900)),
+      title: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(label, style: const TextStyle(fontWeight: FontWeight.w900)),
+          if (comingSoon) ...[
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.grey.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Text('SEGERA HADIR',
+                  style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: Colors.grey)),
+            ),
+          ],
+        ],
+      ),
       subtitle: Text(description,
           style: TextStyle(
               fontSize: 12,
               color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5))),
+    );
+  }
+
+  void _showLanguageComingSoonInfo(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Text('Segera Hadir', style: TextStyle(fontWeight: FontWeight.w900)),
+        content: const Text(
+          'Dukungan Bahasa Inggris belum tersedia di build ini — seluruh teks aplikasi masih '
+          'dalam Bahasa Indonesia. Fitur ini akan diaktifkan pada pembaruan mendatang.',
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('MENGERTI'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -524,6 +565,26 @@ class SettingsScreen extends ConsumerWidget {
                         },
                       ),
                       LastSyncTile(uid: currentUser.uid),
+                      if (settings.lastBackupStatus == 'failed')
+                        ListTile(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                          leading: Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.red.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: const Icon(Icons.cloud_off_rounded, color: Colors.red, size: 22),
+                          ),
+                          title: const Text(
+                            'Backup otomatis terakhir gagal',
+                            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: Colors.red),
+                          ),
+                          subtitle: Text(
+                            'Coba "Backup ke Cloud" manual, atau cek koneksi internet Anda.',
+                            style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                          ),
+                        ),
                       SettingsItem(
                         icon: Icons.logout_rounded,
                         iconColor: Colors.red,

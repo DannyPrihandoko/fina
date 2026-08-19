@@ -396,7 +396,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     final budget = budgets.where((b) => b.category == category).firstOrNull;
     final hasBudget = budget != null;
     final budgetLimit = budget?.limitAmount ?? 0;
-    final budgetUsage = hasBudget ? (amount / budgetLimit).clamp(0.0, 1.0) : 0.0;
+    final budgetUsage = (hasBudget && budgetLimit > 0) ? (amount / budgetLimit).clamp(0.0, 1.0) : 0.0;
     final isExceeded = hasBudget && amount > budgetLimit;
 
     return GestureDetector(
@@ -526,6 +526,12 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
           ElevatedButton(
             onPressed: () {
               final amount = double.tryParse(controller.text) ?? 0;
+              if (amount <= 0) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Batas anggaran harus lebih besar dari Rp 0')),
+                );
+                return;
+              }
               ref.read(budgetsProvider.notifier).setBudget(category, amount);
               Navigator.pop(context);
             },

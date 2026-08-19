@@ -70,7 +70,7 @@ class Transaction {
     return Transaction(
       id: map['id'],
       title: map['title'],
-      amount: map['amount'],
+      amount: (map['amount'] as num).toDouble(),
       type: TransactionType.values.byName(map['type']),
       category: map['category'],
       date: DateTime.parse(map['date']),
