@@ -13,6 +13,7 @@ import '../providers/auth_provider.dart';
 import '../providers/database_provider.dart';
 import '../widgets/success_modal.dart';
 import '../widgets/settings_tiles.dart';
+import 'manage_categories_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -397,6 +398,7 @@ class SettingsScreen extends ConsumerWidget {
         bills: await db.getAllBills(),
         budgets: await db.getAllBudgets(),
         goals: await db.getAllGoals(),
+        categories: await db.getAllCategories(),
         userName: settings.userName,
         photoUrl: user.photoURL,
       );
@@ -462,6 +464,15 @@ class SettingsScreen extends ConsumerWidget {
       for (final g in result.goals) {
         await db.createGoal(g);
       }
+      // Backup lama (sebelum fitur kategori custom) tidak punya dokumen 'categories' —
+      // jangan wipe kategori lokal kalau cloud tidak punya apa-apa, supaya kategori
+      // bawaan yang sudah ke-seed migrasi tidak hilang jadi daftar kosong.
+      if (result.categories.isNotEmpty) {
+        await database.delete('categories');
+        for (final c in result.categories) {
+          await db.createCategory(c);
+        }
+      }
 
       // Refresh all providers
       ref.invalidate(transactionsProvider);
@@ -469,6 +480,7 @@ class SettingsScreen extends ConsumerWidget {
       ref.invalidate(billsProvider);
       ref.invalidate(budgetsProvider);
       ref.invalidate(goalsProvider);
+      ref.invalidate(categoriesProvider);
 
       if (context.mounted) {
         SuccessModal.show(
@@ -664,6 +676,13 @@ class SettingsScreen extends ConsumerWidget {
                       onChanged: (value) => ref
                           .read(settingsProvider.notifier)
                           .setDarkMode(value),
+                    ),
+                    SettingsItem(
+                      icon: Icons.category_rounded,
+                      iconColor: Colors.indigo,
+                      title: 'Kelola Kategori',
+                      subtitle: 'Tambah atau hapus kategori transaksi',
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ManageCategoriesScreen())),
                     ),
                     SettingsItem(
                       icon: Icons.verified_user_rounded,

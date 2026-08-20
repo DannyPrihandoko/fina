@@ -7,6 +7,8 @@ import '../models/transaction.dart';
 import '../models/budget.dart';
 import '../theme/colors.dart';
 import '../providers/navigation_provider.dart';
+import '../utils/category_style.dart';
+import 'manage_categories_screen.dart';
 
 class StatsScreen extends ConsumerStatefulWidget {
   const StatsScreen({super.key});
@@ -17,6 +19,23 @@ class StatsScreen extends ConsumerStatefulWidget {
 
 class _StatsScreenState extends ConsumerState<StatsScreen> {
   String _timeRange = '7D';
+  // Dipakai saat _timeRange == 'Per Bulan' — memungkinkan lihat rekap mundur ke
+  // bulan manapun di riwayat (bukan cuma "Bulan Ini"/"Bulan Lalu" yang fixed).
+  // Pola & rentang (12 bulan) sengaja disamakan dengan _months di transactions_screen.dart.
+  late DateTime _selectedMonth;
+  final List<DateTime> _months = [];
+  // Filter kelompok pengeluaran di section "Detail Pengeluaran". Set kosong = tampilkan semua.
+  final Set<String> _selectedExpenseCategories = {};
+
+  @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    _selectedMonth = DateTime(now.year, now.month, 1);
+    for (int i = 0; i < 12; i++) {
+      _months.add(DateTime(now.year, now.month - i, 1));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,9 +63,15 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     
     final sortedCategories = categorySums.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
-      
+
     final sortedIncomeCategories = incomeSums.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
+
+    // "Kelompok pengeluaran" yang dipilih user di filter section "Detail Pengeluaran".
+    // Set kosong berarti tidak ada filter aktif (tampilkan semua kategori).
+    final visibleExpenseCategories = _selectedExpenseCategories.isEmpty
+        ? sortedCategories
+        : sortedCategories.where((e) => _selectedExpenseCategories.contains(e.key)).toList();
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -60,6 +85,13 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
         ),
         title: Text('Rekapitulasi', style: TextStyle(fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onSurface)),
         centerTitle: false,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.category_rounded, color: Theme.of(context).colorScheme.onSurface, size: 20),
+            tooltip: 'Kelola Kategori',
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ManageCategoriesScreen())),
+          ),
+        ],
       ),
       body: CustomScrollView(
         slivers: [
@@ -79,10 +111,15 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                           _buildFilterChip('30D'),
                           _buildFilterChip('Bulan Ini'),
                           _buildFilterChip('Bulan Lalu'),
+                          _buildFilterChip('Per Bulan'),
                         ],
                       ),
                     ),
                   ),
+                  if (_timeRange == 'Per Bulan') ...[
+                    const SizedBox(height: 12),
+                    _buildMonthSelector(),
+                  ],
                   const SizedBox(height: 24),
 
                   // Main Summary Card (Glassmorphic)
@@ -166,11 +203,16 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text('Ketuk kategori untuk mengatur anggaran', style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
-                      const SizedBox(height: 24),
-                      if (sortedCategories.isEmpty)
-                        _buildEmptyState('Tidak ada data pengeluaran.')
+                      const SizedBox(height: 16),
+                      if (sortedCategories.isNotEmpty)
+                        _buildExpenseCategoryFilter(sortedCategories.map((e) => e.key).toList()),
+                      const SizedBox(height: 16),
+                      if (visibleExpenseCategories.isEmpty)
+                        _buildEmptyState(sortedCategories.isEmpty
+                            ? 'Tidak ada data pengeluaran.'
+                            : 'Tidak ada kategori yang cocok dengan filter.')
                       else
-                        ...sortedCategories.map((entry) {
+                        ...visibleExpenseCategories.map((entry) {
                           final categoryTransactions = filteredTx
                               .where((tx) => tx.type == TransactionType.expense && tx.category == entry.key)
                               .toList();
@@ -215,6 +257,10 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
         // (mis. 23:59:59.500) tidak ikut ke-exclude oleh isBefore().
         final currentMonthStart = DateTime(now.year, now.month, 1);
         return list.where((tx) => tx.date.isAfter(prevMonth.subtract(const Duration(seconds: 1))) && tx.date.isBefore(currentMonthStart)).toList();
+      case 'Per Bulan':
+        // Bisa mundur ke bulan manapun (dipilih via _buildMonthSelector), tidak
+        // dibatasi cuma "bulan ini"/"bulan lalu".
+        return list.where((tx) => tx.date.year == _selectedMonth.year && tx.date.month == _selectedMonth.month).toList();
       default:
         return list;
     }
@@ -676,6 +722,100 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     );
   }
 
+  /// Chip multi-select buat filter kategori yang ditampilkan di "Detail Pengeluaran".
+  /// `categories` cuma kategori yang benar-benar punya transaksi di rentang waktu
+  /// terpilih (bukan semua kategori terdaftar), biar tidak ada chip kosong yang
+  /// kalau dipilih malah tidak menampilkan apa pun.
+  Widget _buildExpenseCategoryFilter(List<String> categories) {
+    return SizedBox(
+      height: 36,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          _buildCategoryFilterChip('Semua', _selectedExpenseCategories.isEmpty, () {
+            setState(() => _selectedExpenseCategories.clear());
+          }),
+          ...categories.map((cat) {
+            final isSelected = _selectedExpenseCategories.contains(cat);
+            return _buildCategoryFilterChip(cat, isSelected, () {
+              setState(() {
+                if (isSelected) {
+                  _selectedExpenseCategories.remove(cat);
+                } else {
+                  _selectedExpenseCategories.add(cat);
+                }
+              });
+            });
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategoryFilterChip(String label, bool isSelected, VoidCallback onTap) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected ? Theme.of(context).colorScheme.secondary.withOpacity(0.15) : Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.4),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: isSelected ? Theme.of(context).colorScheme.secondary : Colors.transparent, width: 1.2),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              color: isSelected ? Theme.of(context).colorScheme.secondary : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMonthSelector() {
+    return SizedBox(
+      height: 48,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: _months.length,
+        itemBuilder: (context, index) {
+          final month = _months[index];
+          final isSelected = month.year == _selectedMonth.year && month.month == _selectedMonth.month;
+
+          return GestureDetector(
+            onTap: () => setState(() => _selectedMonth = month),
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              decoration: BoxDecoration(
+                color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).dividerColor.withOpacity(0.5)),
+              ),
+              child: Center(
+                child: Text(
+                  DateFormat('MMM yyyy').format(month),
+                  style: TextStyle(
+                    color: isSelected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurface,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 12,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildFilterChip(String label) {
     final isSelected = _timeRange == label;
     return GestureDetector(
@@ -698,28 +838,11 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     );
   }
 
-  IconData _getCategoryIcon(String category) {
-    switch (category.toLowerCase()) {
-      case 'makanan': return Icons.restaurant_rounded;
-      case 'belanja': return Icons.shopping_bag_outlined;
-      case 'transportasi': return Icons.directions_bus_filled_outlined;
-      case 'hiburan': return Icons.movie_filter_outlined;
-      case 'kesehatan': return Icons.health_and_safety_outlined;
-      case 'transfer': return Icons.swap_horiz_rounded;
-      default: return Icons.category_outlined;
-    }
-  }
+  IconData _getCategoryIcon(String category) => CategoryStyle.icon(category);
 
-  Color _getCategoryColor(String category) {
-    switch (category.toLowerCase()) {
-      case 'makanan': return Colors.orange;
-      case 'belanja': return Colors.purple;
-      case 'transportasi': return Colors.blue;
-      case 'hiburan': return Colors.pink;
-      case 'kesehatan': return Colors.teal;
-      default: return AppColors.textDarkBlue;
-    }
-  }
+  // Warna sekarang bersumber dari categoriesProvider (tabel `categories` di DB, termasuk
+  // kategori custom yang ditambah user), bukan switch statement hardcoded lagi.
+  Color _getCategoryColor(String category) => CategoryStyle.color(category, ref.watch(categoriesProvider));
 
   Widget _buildEmptyState(String message) {
     return Center(

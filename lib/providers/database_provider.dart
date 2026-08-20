@@ -11,6 +11,7 @@ export 'wallet_provider.dart';
 export 'transaction_provider.dart';
 export 'bill_provider.dart';
 export 'goal_provider.dart';
+export 'category_provider.dart';
 
 final databaseServiceProvider = Provider((ref) => DatabaseService.instance);
 
@@ -32,6 +33,7 @@ class DatabaseBackupHelper {
           bills: await db.getAllBills(),
           budgets: await db.getAllBudgets(),
           goals: await db.getAllGoals(),
+          categories: await db.getAllCategories(),
           userName: settings.userName,
           photoUrl: user.photoURL,
         );

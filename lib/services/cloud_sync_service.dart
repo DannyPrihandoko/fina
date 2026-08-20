@@ -1,11 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' hide Category;
 import '../models/transaction.dart';
 import '../models/wallet.dart';
 import '../models/bill.dart';
 import '../models/budget.dart';
 import '../models/financial_goal.dart';
+import '../models/category.dart';
 
 class CloudSyncService {
   static final CloudSyncService _instance = CloudSyncService._internal();
@@ -34,6 +35,7 @@ class CloudSyncService {
     required List<Bill> bills,
     required List<Budget> budgets,
     required List<FinancialGoal> goals,
+    required List<Category> categories,
     String? userName,
     String? photoUrl,
   }) async {
@@ -74,6 +76,11 @@ class CloudSyncService {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
+      batch.set(_backupRef(uid).doc('categories'), {
+        'data': categories.map((c) => c.toMap()).toList(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
       await batch.commit();
       debugPrint('CloudSync: Backup completed for uid=$uid');
     } catch (e) {
@@ -101,6 +108,7 @@ class CloudSyncService {
         _backupRef(uid).doc('bills').get(),
         _backupRef(uid).doc('budgets').get(),
         _backupRef(uid).doc('goals').get(),
+        _backupRef(uid).doc('categories').get(),
       ]);
 
       final txDoc = results[0];
@@ -108,6 +116,7 @@ class CloudSyncService {
       final billDoc = results[2];
       final budgetDoc = results[3];
       final goalDoc = results[4];
+      final categoryDoc = results[5];
 
       final transactions = txDoc.exists
           ? (txDoc.data() as Map<String, dynamic>)['data'] as List<dynamic>
@@ -124,10 +133,16 @@ class CloudSyncService {
       final goals = goalDoc.exists
           ? (goalDoc.data() as Map<String, dynamic>)['data'] as List<dynamic>
           : [];
+      // Dokumen 'categories' baru ada untuk user yang backup SETELAH fitur kategori
+      // custom ini dirilis — kalau belum ada (user lama), fallback list kosong;
+      // kategori default akan otomatis ke-seed lagi oleh migrasi DB lokal.
+      final categories = categoryDoc.exists
+          ? (categoryDoc.data() as Map<String, dynamic>)['data'] as List<dynamic>
+          : [];
 
       debugPrint('CloudSync: Restore found ${transactions.length} transactions, '
           '${wallets.length} wallets, ${bills.length} bills, '
-          '${budgets.length} budgets, ${goals.length} goals.');
+          '${budgets.length} budgets, ${goals.length} goals, ${categories.length} categories.');
 
       return CloudRestoreResult(
         transactions: transactions
@@ -144,6 +159,9 @@ class CloudSyncService {
             .toList(),
         goals: goals
             .map((e) => FinancialGoal.fromMap(Map<String, dynamic>.from(e)))
+            .toList(),
+        categories: categories
+            .map((e) => Category.fromMap(Map<String, dynamic>.from(e)))
             .toList(),
       );
     } catch (e) {
@@ -172,6 +190,7 @@ class CloudRestoreResult {
   final List<Bill> bills;
   final List<Budget> budgets;
   final List<FinancialGoal> goals;
+  final List<Category> categories;
 
   CloudRestoreResult({
     required this.transactions,
@@ -179,5 +198,6 @@ class CloudRestoreResult {
     required this.bills,
     required this.budgets,
     required this.goals,
+    required this.categories,
   });
 }

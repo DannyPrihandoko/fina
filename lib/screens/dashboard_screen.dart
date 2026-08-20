@@ -16,6 +16,7 @@ import '../models/budget.dart';
 import '../providers/settings_provider.dart';
 import '../providers/navigation_provider.dart';
 import '../providers/streak_provider.dart';
+import '../utils/category_style.dart';
 import '../widgets/streak_badge.dart';
 
 
@@ -689,7 +690,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5), 
           borderRadius: BorderRadius.circular(16)
         ),
-        child: Icon(_getCategoryIcon(tx.category), color: Theme.of(context).colorScheme.onSurface, size: 22),
+        child: Icon(CategoryStyle.icon(tx.category), color: Theme.of(context).colorScheme.onSurface, size: 22),
       ),
       title: Text(tx.title, style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Theme.of(context).colorScheme.onSurface)),
       subtitle: Text('${tx.category} • ${DateFormat('dd MMM').format(tx.date)}', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontSize: 11, fontWeight: FontWeight.w500)),
@@ -727,19 +728,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  IconData _getCategoryIcon(String category) {
-    switch (category.toLowerCase()) {
-      case 'makanan': return Icons.restaurant_rounded;
-      case 'belanja': return Icons.shopping_bag_outlined;
-      case 'transportasi': return Icons.directions_bus_filled_outlined;
-      case 'hiburan': return Icons.movie_filter_outlined;
-      case 'kesehatan': return Icons.health_and_safety_outlined;
-      case 'pendapatan': return Icons.attach_money_rounded;
-      case 'transfer': return Icons.swap_horiz_rounded;
-      case 'initial': return Icons.first_page_rounded;
-      default: return Icons.category_outlined;
-    }
-  }
 }
 
 class _SmartTransactionBubble extends StatefulWidget {

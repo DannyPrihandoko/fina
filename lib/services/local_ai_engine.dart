@@ -619,7 +619,8 @@ class LocalAIEngine {
     // 4. Category Detection — kata kunci diperluas dengan merchant/vendor umum Indonesia
     // supaya struk (makanan, retail, transportasi, hiburan, kesehatan, tagihan/cicilan)
     // lebih akurat ter-klasifikasi otomatis. Semua kategori output HARUS termasuk dalam
-    // AppConstants.defaultCategories, karena form transaksi hanya punya chip untuk daftar itu.
+    // 7 kategori bawaan yang di-seed ke tabel `categories` (lihat DatabaseService),
+    // karena form transaksi ambil daftar chip dari categoriesProvider.
     String category = 'Lainnya';
     if (_containsAny(cleanText, [
       // 'mart' sengaja TIDAK dimasukkan di sini — substring generic itu akan menutupi

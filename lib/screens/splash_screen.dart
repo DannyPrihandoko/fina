@@ -83,6 +83,12 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
         for (final b in result.bills) { await db.createBill(b); }
         for (final bg in result.budgets) { await db.saveBudget(bg); }
         for (final g in result.goals) { await db.createGoal(g); }
+        // Backup lama tidak punya dokumen 'categories' — jangan wipe kategori lokal
+        // kalau cloud tidak punya apa-apa (lihat catatan sama di settings_screen.dart).
+        if (result.categories.isNotEmpty) {
+          await database.delete('categories');
+          for (final c in result.categories) { await db.createCategory(c); }
+        }
 
         debugPrint('SplashScreen: Auto-restore completed from cloud.');
       }

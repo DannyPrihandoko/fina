@@ -7,6 +7,7 @@ import '../models/wallet.dart';
 import '../utils/currency_formatter.dart';
 import '../utils/constants.dart';
 import '../widgets/success_modal.dart';
+import 'manage_categories_screen.dart';
 
 class AddTransactionScreen extends ConsumerStatefulWidget {
   final double? initialAmount;
@@ -34,8 +35,6 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
   int? _selectedWalletId;
   int? _targetWalletId;
   bool _isAutoFilled = false;
-
-  final List<String> _categories = AppConstants.defaultCategories;
 
   @override
   void initState() {
@@ -236,19 +235,31 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: _categories.map((cat) {
-                    final isSelected = _category == cat;
-                    return ChoiceChip(
-                      label: Text(cat),
-                      selected: isSelected,
-                      onSelected: (selected) => selected ? setState(() => _category = cat) : null,
-                      selectedColor: Theme.of(context).colorScheme.secondary,
+                  children: [
+                    // Kategori sekarang dinamis dari categoriesProvider (bisa ditambah
+                    // user via ManageCategoriesScreen), bukan daftar statis lagi.
+                    ...ref.watch(categoriesProvider).map((c) => c.name).map((cat) {
+                      final isSelected = _category == cat;
+                      return ChoiceChip(
+                        label: Text(cat),
+                        selected: isSelected,
+                        onSelected: (selected) => selected ? setState(() => _category = cat) : null,
+                        selectedColor: Theme.of(context).colorScheme.secondary,
+                        backgroundColor: Theme.of(context).cardTheme.color,
+                        labelStyle: TextStyle(color: isSelected ? Theme.of(context).colorScheme.onSecondary : Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontWeight: FontWeight.bold, fontSize: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide(color: isSelected ? Theme.of(context).colorScheme.secondary : Theme.of(context).dividerColor)),
+                        showCheckmark: false,
+                      );
+                    }),
+                    ActionChip(
+                      avatar: const Icon(Icons.add_rounded, size: 16),
+                      label: const Text('Kelola'),
+                      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ManageCategoriesScreen())),
                       backgroundColor: Theme.of(context).cardTheme.color,
-                      labelStyle: TextStyle(color: isSelected ? Theme.of(context).colorScheme.onSecondary : Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontWeight: FontWeight.bold, fontSize: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide(color: isSelected ? Theme.of(context).colorScheme.secondary : Theme.of(context).dividerColor)),
-                      showCheckmark: false,
-                    );
-                  }).toList(),
+                      labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontWeight: FontWeight.bold, fontSize: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide(color: Theme.of(context).dividerColor)),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 48),
               ],

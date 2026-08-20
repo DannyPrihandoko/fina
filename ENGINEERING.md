@@ -85,6 +85,7 @@ lib/
 ├── models/                         # Data classes (immutable)
 │   ├── bill.dart                   # Model Tagihan
 │   ├── budget.dart                 # Model Anggaran per Kategori
+│   ├── category.dart               # Model Kategori transaksi (dinamis, sejak v6)
 │   ├── financial_goal.dart         # Model Target Finansial
 │   ├── transaction.dart            # Model Transaksi (income/expense/transfer)
 │   └── wallet.dart                 # Model Dompet (cash/bank/ewallet)
@@ -92,6 +93,7 @@ lib/
 │   ├── auth_provider.dart          # Auth state (Firebase user stream)
 │   ├── database_provider.dart      # Barrel file untuk export provider data
 │   ├── budget_provider.dart        # Budget StateNotifier
+│   ├── category_provider.dart      # Category StateNotifier (kategori custom)
 │   ├── wallet_provider.dart        # Wallet StateNotifier & balance calculation
 │   ├── transaction_provider.dart   # Transaction StateNotifier
 │   ├── bill_provider.dart          # Bill StateNotifier
@@ -110,11 +112,12 @@ lib/
 │   ├── dashboard_screen.dart       # Dashboard utama (net worth, chart, etc)
 │   ├── goals_screen.dart           # List & manage target finansial
 │   ├── main_screen.dart            # Shell + BottomNavigationBar
+│   ├── manage_categories_screen.dart # CRUD kategori transaksi custom
 │   ├── settings_screen.dart        # Pengaturan aplikasi
 │   ├── share_data_screen.dart      # Publikasi data ke cloud + QR
 │   ├── shared_detail_screen.dart   # Detail data koneksi
 │   ├── splash_screen.dart          # Splash + auto-restore dari cloud
-│   ├── stats_screen.dart           # Statistik & grafik
+│   ├── stats_screen.dart           # Statistik & grafik (filter waktu + kategori)
 │   ├── transactions_screen.dart    # Riwayat transaksi
 │   └── wallets_screen.dart         # Manage multi-wallet
 ├── services/                       # Business logic & external integrations
@@ -130,7 +133,8 @@ lib/
 │   ├── app_theme.dart              # Light + Dark ThemeData
 │   └── colors.dart                 # AppColors constants
 ├── utils/                          # Utility helpers
-│   ├── constants.dart              # Global constants (categories, config)
+│   ├── category_style.dart         # Ikon & warna kategori terpusat (dashboard/stats/transactions)
+│   ├── constants.dart              # Global constants (kategori bill, config)
 │   └── currency_formatter.dart     # ThousandSeparatorFormatter + CurrencyUtils
 └── widgets/                        # Reusable UI components
     ├── settings_tiles.dart         # Modular widget untuk pengaturan
@@ -242,6 +246,24 @@ class Connection {
 }
 ```
 
+### 3.7 Category
+
+```dart
+// File: lib/models/category.dart
+class Category {
+  final int? id;
+  final String name;      // Unik (constraint UNIQUE di DB)
+  final int color;         // Color.value (int ARGB)
+  final bool isDefault;    // Kategori bawaan (7 default) — tidak bisa dihapus user
+}
+```
+
+**Catatan penting:**
+- Sejak DB versi 6, kategori transaksi TIDAK lagi hardcoded (`AppConstants.defaultCategories` statis) — dikelola dinamis lewat tabel `categories`, provider `categoriesProvider`, dan layar `ManageCategoriesScreen`.
+- 7 kategori bawaan (Makanan, Belanja, Transportasi, Hiburan, Kesehatan, Cicilan, Lainnya) di-seed otomatis saat DB dibuat/dimigrasi, dengan `isDefault = true` sehingga tidak bisa dihapus.
+- Kategori custom yang ditambah user hanya bisa dihapus kalau belum dipakai transaksi manapun (guard sama seperti penghapusan wallet).
+- Ikon kategori tetap dari lookup statis (`CategoryStyle.icon`, berdasarkan nama); hanya WARNA yang dinamis dari tabel `categories` (`CategoryStyle.color`). Kategori custom baru dapat ikon generik (`Icons.category_outlined`) + warna pilihan user.
+
 ### Diagram Relasi Model
 
 ```
@@ -334,6 +356,17 @@ CREATE TABLE financial_goals (
   icon         TEXT NOT NULL DEFAULT '🎯',
   color        TEXT NOT NULL DEFAULT '0xFF4CAF50'
 );
+
+-- Categories: Kategori transaksi (dinamis, bisa ditambah user)
+CREATE TABLE categories (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  name       TEXT NOT NULL UNIQUE,
+  color      INTEGER NOT NULL,
+  isDefault  INTEGER NOT NULL DEFAULT 0
+);
+-- Di-seed otomatis (isDefault=1): Makanan, Belanja, Transportasi, Hiburan,
+-- Kesehatan, Cicilan, Lainnya — warnanya harus sama dengan yang dulu hardcoded
+-- di stats_screen.dart (lihat DatabaseService._defaultCategorySeeds).
 ```
 
 ### Migration History
@@ -344,6 +377,7 @@ CREATE TABLE financial_goals (
 | 2 → 3 | Tambah tabel `budgets` |
 | 3 → 4 | Tambah kolom `isPaid` di bills |
 | 4 → 5 | Tambah tabel `financial_goals` |
+| 5 → 6 | Tambah tabel `categories` + seed 7 kategori bawaan |
 
 ### CRUD Operations
 
@@ -356,8 +390,11 @@ CREATE TABLE financial_goals (
 | Bill | `createBill()` | `getAllBills()` | `updateBill()` | `deleteBill()` |
 | Budget | `saveBudget()` | `getAllBudgets()` | `saveBudget()` (REPLACE) | `deleteBudget()` |
 | FinancialGoal | `createGoal()` | `getAllGoals()` | `updateGoal()` | `deleteGoal()` |
+| Category | `createCategory()` | `getAllCategories()` | ❌ | `deleteCategory()` |
 
 > ⚠️ **Transaction tidak memiliki update** — hanya delete dan create ulang.
+> ⚠️ **Category tidak memiliki update** — hapus lalu buat ulang kalau perlu ganti warna/nama.
+> ⚠️ **Wallet hanya bisa dihapus kalau tidak ada transaksi yang mengacu ke sana** (diblokir di `wallets_screen.dart`, bukan di `DatabaseService` — lihat §18).
 
 ---
 
@@ -555,6 +592,7 @@ transactionsProvider      : StateNotifierProvider<TransactionsNotifier, List<Tra
 billsProvider             : StateNotifierProvider<BillsNotifier, List<Bill>>
 budgetsProvider           : StateNotifierProvider<BudgetsNotifier, List<Budget>>
 goalsProvider             : StateNotifierProvider<GoalsNotifier, List<FinancialGoal>>
+categoriesProvider        : StateNotifierProvider<CategoriesNotifier, List<Category>>
 socialProvider            : StateNotifierProvider<SocialNotifier, SocialState>
 
 // ─── COMPUTED PROVIDERS & CACHING ─────────────────────────
@@ -681,10 +719,11 @@ Sub-screens (via Navigator.push):
 | `dashboard_screen` | 32KB | Net worth, recent tx, chart, AI insight card, streak badge |
 | `settings_screen` | 25KB | Dark mode, notif, profile, backup/restore, language |
 | `bills_screen` | 25KB | List tagihan, swipe-to-pay, overdue indicator |
-| `stats_screen` | 29KB | Rekapitulasi, time-range filter (7D/30D), cash flow trend, detail pemasukan & pengeluaran |
+| `stats_screen` | 29KB | Rekapitulasi, filter waktu (7D/30D/Bulan Ini/Bulan Lalu/**Per Bulan** — bisa mundur 12 bulan), cash flow trend, filter kelompok pengeluaran (multi-select kategori), detail pemasukan & pengeluaran |
 | `wallets_screen` | 21KB | Multi-wallet CRUD, balance per wallet |
-| `transactions_screen` | 20KB | Full transaction history, filter, swipe-to-delete |
+| `transactions_screen` | 20KB | Full transaction history, filter per bulan, swipe-to-delete |
 | `goals_screen` | 19KB | Goal cards, progress bar, add savings |
+| `manage_categories_screen` | — | CRUD kategori transaksi custom (nama + warna), guard hapus kalau masih dipakai transaksi |
 | `add_bill_screen` | 16KB | Form tagihan (kategori, nominal, tanggal) |
 | `add_transaction_screen` | 13KB | Form transaksi + OCR scan button |
 | `add_goal_screen` | 13KB | Form target (emoji picker, color picker) |

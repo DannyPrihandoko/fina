@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../providers/database_provider.dart';
 import '../models/transaction.dart';
 import '../models/wallet.dart';
+import '../utils/category_style.dart';
 
 class TransactionsScreen extends ConsumerStatefulWidget {
   const TransactionsScreen({super.key});
@@ -343,7 +344,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
               color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5), 
               borderRadius: BorderRadius.circular(16)
             ),
-            child: Icon(_getCategoryIcon(tx.category), size: 22, color: Theme.of(context).colorScheme.onSurface),
+            child: Icon(CategoryStyle.icon(tx.category), size: 22, color: Theme.of(context).colorScheme.onSurface),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -422,16 +423,4 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     return DateFormat('EEEE, dd MMMM').format(date).toUpperCase();
   }
 
-  IconData _getCategoryIcon(String category) {
-    switch (category.toLowerCase()) {
-      case 'makanan': return Icons.restaurant_rounded;
-      case 'belanja': return Icons.shopping_bag_outlined;
-      case 'transportasi': return Icons.directions_bus_filled_outlined;
-      case 'hiburan': return Icons.movie_filter_outlined;
-      case 'kesehatan': return Icons.health_and_safety_outlined;
-      case 'transfer': return Icons.swap_horiz_rounded;
-      case 'initial': return Icons.first_page_rounded;
-      default: return Icons.category_outlined;
-    }
-  }
 }

@@ -5,6 +5,7 @@ import '../models/bill.dart';
 import '../models/wallet.dart';
 import '../models/budget.dart';
 import '../models/financial_goal.dart';
+import '../models/category.dart';
 
 class DatabaseService {
   static final DatabaseService instance = DatabaseService._init();
@@ -24,10 +25,33 @@ class DatabaseService {
 
     return await openDatabase(
       path,
-      version: 5,
+      version: 6,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
+  }
+
+  // Kategori bawaan — dipakai untuk seed tabel `categories` (baru & saat migrasi),
+  // warnanya harus sama persis dengan yang sebelumnya hardcoded di stats_screen.dart
+  // supaya tampilan kategori existing tidak berubah setelah upgrade.
+  static const Map<String, int> _defaultCategorySeeds = {
+    'Makanan': 0xFFFF9800, // orange
+    'Belanja': 0xFF9C27B0, // purple
+    'Transportasi': 0xFF2196F3, // blue
+    'Hiburan': 0xFFE91E63, // pink
+    'Kesehatan': 0xFF009688, // teal
+    'Cicilan': 0xFF795548, // brown
+    'Lainnya': 0xFF0D1B2A, // textDarkBlue
+  };
+
+  Future<void> _seedDefaultCategories(Database db) async {
+    for (final entry in _defaultCategorySeeds.entries) {
+      await db.insert(
+        'categories',
+        {'name': entry.key, 'color': entry.value, 'isDefault': 1},
+        conflictAlgorithm: ConflictAlgorithm.ignore,
+      );
+    }
   }
 
   Future _createDB(Database db, int version) async {
@@ -102,6 +126,16 @@ CREATE TABLE financial_goals (
   color TEXT NOT NULL DEFAULT '0xFF4CAF50'
 )
 ''');
+
+    await db.execute('''
+CREATE TABLE categories (
+  id $idType,
+  name TEXT NOT NULL UNIQUE,
+  color INTEGER NOT NULL,
+  isDefault INTEGER NOT NULL DEFAULT 0
+)
+''');
+    await _seedDefaultCategories(db);
   }
 
   Future _upgradeDB(Database db, int oldVersion, int newVersion) async {
@@ -146,6 +180,18 @@ CREATE TABLE financial_goals (
   color TEXT NOT NULL DEFAULT '0xFF4CAF50'
 )
 ''');
+    }
+
+    if (oldVersion < 6) {
+      await db.execute('''
+CREATE TABLE categories (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL UNIQUE,
+  color INTEGER NOT NULL,
+  isDefault INTEGER NOT NULL DEFAULT 0
+)
+''');
+      await _seedDefaultCategories(db);
     }
   }
 
@@ -271,5 +317,22 @@ CREATE TABLE financial_goals (
   Future<int> deleteGoal(int id) async {
     final db = await instance.database;
     return await db.delete('financial_goals', where: 'id = ?', whereArgs: [id]);
+  }
+
+  // Category CRUD
+  Future<int> createCategory(Category category) async {
+    final db = await instance.database;
+    return await db.insert('categories', category.toMap());
+  }
+
+  Future<List<Category>> getAllCategories() async {
+    final db = await instance.database;
+    final result = await db.query('categories', orderBy: 'name ASC');
+    return result.map((json) => Category.fromMap(json)).toList();
+  }
+
+  Future<int> deleteCategory(int id) async {
+    final db = await instance.database;
+    return await db.delete('categories', where: 'id = ?', whereArgs: [id]);
   }
 }
