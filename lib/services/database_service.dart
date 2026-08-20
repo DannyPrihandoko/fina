@@ -99,7 +99,7 @@ CREATE TABLE financial_goals (
   savedAmount REAL NOT NULL DEFAULT 0,
   deadline $textType,
   icon TEXT NOT NULL DEFAULT '🎯',
-  color TEXT NOT NULL DEFAULT '0xFF00BFA5'
+  color TEXT NOT NULL DEFAULT '0xFF4CAF50'
 )
 ''');
   }
@@ -143,7 +143,7 @@ CREATE TABLE financial_goals (
   savedAmount REAL NOT NULL DEFAULT 0,
   deadline TEXT NOT NULL,
   icon TEXT NOT NULL DEFAULT '🎯',
-  color TEXT NOT NULL DEFAULT '0xFF00BFA5'
+  color TEXT NOT NULL DEFAULT '0xFF4CAF50'
 )
 ''');
     }

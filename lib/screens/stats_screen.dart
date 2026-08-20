@@ -210,8 +210,11 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
         return list.where((tx) => tx.date.year == now.year && tx.date.month == now.month).toList();
       case 'Bulan Lalu':
         final prevMonth = DateTime(now.year, now.month - 1, 1);
-        final monthEnd = DateTime(now.year, now.month, 0, 23, 59, 59);
-        return list.where((tx) => tx.date.isAfter(prevMonth.subtract(const Duration(seconds: 1))) && tx.date.isBefore(monthEnd)).toList();
+        // Batas atas pakai awal bulan berjalan (bukan "akhir bulan lalu jam 23:59:59"),
+        // supaya transaksi dengan milidetik non-nol di hari terakhir bulan lalu
+        // (mis. 23:59:59.500) tidak ikut ke-exclude oleh isBefore().
+        final currentMonthStart = DateTime(now.year, now.month, 1);
+        return list.where((tx) => tx.date.isAfter(prevMonth.subtract(const Duration(seconds: 1))) && tx.date.isBefore(currentMonthStart)).toList();
       default:
         return list;
     }

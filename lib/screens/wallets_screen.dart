@@ -80,6 +80,23 @@ class WalletsScreen extends ConsumerWidget {
                               );
                               return false;
                             }
+                            // Cegah wallet dihapus kalau masih ada transaksi yang mengacu ke sana —
+                            // deleteWallet() di database_service.dart tidak cascade-delete transaksi,
+                            // jadi transaksi itu akan jadi orphan (tetap muncul di riwayat, ikut
+                            // hilang dari perhitungan net worth) kalau dibiarkan lolos.
+                            final walletTx = ref.read(walletTransactionsProvider(wallet.id!));
+                            if (walletTx.isNotEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Tidak bisa hapus "${wallet.name}" — masih ada ${walletTx.length} transaksi. Hapus atau pindahkan transaksinya dulu.'),
+                                  backgroundColor: Colors.redAccent,
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                  margin: const EdgeInsets.fromLTRB(24, 0, 24, 40),
+                                ),
+                              );
+                              return false;
+                            }
                             return true;
                           },
                           background: Container(

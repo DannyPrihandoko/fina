@@ -20,13 +20,13 @@ class _AddGoalScreenState extends ConsumerState<AddGoalScreen> {
   late TextEditingController _savedController;
   late DateTime _deadline;
   String _selectedIcon = '🎯';
-  String _selectedColor = '0xFF00BFA5';
+  String _selectedColor = '0xFF4CAF50'; // Hijau logo FiNa
 
   bool get isEditing => widget.editGoal != null;
 
   final List<String> _icons = ['🎯', '🏠', '🚗', '✈️', '📱', '💻', '🎓', '💍', '🏥', '🎮', '👶', '💼', '🏖️', '📚', '🎸'];
   final List<Map<String, dynamic>> _colors = [
-    {'label': 'Hijau', 'value': '0xFF00BFA5'},
+    {'label': 'Hijau', 'value': '0xFF4CAF50'},
     {'label': 'Biru', 'value': '0xFF2196F3'},
     {'label': 'Ungu', 'value': '0xFF7C4DFF'},
     {'label': 'Oranye', 'value': '0xFFFF9800'},

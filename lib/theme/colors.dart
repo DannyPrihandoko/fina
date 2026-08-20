@@ -3,7 +3,17 @@ import 'package:flutter/material.dart';
 class AppColors {
   static const Color background = Color(0xFFFDFDFD); // Premium Off-White
   static const Color cardPaleBlue = Color(0xFFF1F5FB); // Lighter blue for cards
-  static const Color ctaAqua = Color(0xFF00BFA5); // Slightly darker aqua for better contrast
+
+  // Aksen utama diambil dari tone warna logo "FiNa" (assets/icon/logo_apps.png):
+  // huruf F biru, i kuning, N merah, a hijau. ctaAqua dipakai luas di 23+ tempat
+  // sebagai warna CTA/highlight utama — diganti ke hijau logo (nuansa "tumbuh/uang")
+  // sementara nama variabel dipertahankan supaya tidak breaking semua pemanggilnya.
+  static const Color ctaAqua = Color(0xFF4CAF50); // Hijau logo — CTA/highlight utama
+  static const Color iconBlue = Color(0xFF2F8FE0); // Biru huruf F di logo
+  static const Color iconYellow = Color(0xFFFFC93C); // Kuning huruf i di logo
+  static const Color iconRed = Color(0xFFFF5247); // Merah huruf N di logo
+  static const Color iconGreen = ctaAqua; // Hijau huruf a di logo (= aksen utama)
+
   static const Color textDarkBlue = Color(0xFF0D1B2A); // Darker blue for text
   static const Color textMuted = Color(0xFF62727B); // Better contrast for muted text
   static const Color borderColor = Color(0xFFE0E6ED); // Softer border
@@ -26,6 +36,6 @@ class AppColors {
 
   // Premium Gradients
   static const List<Color> mainGradient = [Color(0xFF0D1B2A), Color(0xFF1B263B)];
-  static const List<Color> accentGradient = [Color(0xFF00E5FF), Color(0xFF00BFA5)];
+  static const List<Color> accentGradient = [iconBlue, ctaAqua]; // Biru -> hijau logo
   static const List<Color> glassGradient = [Color(0x33FFFFFF), Color(0x0DFFFFFF)];
 }

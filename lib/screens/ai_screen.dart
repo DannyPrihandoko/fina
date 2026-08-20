@@ -47,18 +47,25 @@ class _AIScreenState extends ConsumerState<AIScreen> {
     Future.delayed(const Duration(milliseconds: 1500), () {
       if (!mounted) return;
 
-      final transactions = ref.read(transactionsProvider);
-      final bills = ref.read(billsProvider);
-      final budgets = ref.read(budgetsProvider);
-      final wallets = ref.read(walletsProvider);
-      
-      final response = _aiEngine.processQuery(
-        query: query,
-        transactions: transactions,
-        bills: bills,
-        budgets: budgets,
-        wallets: wallets,
-      );
+      String response;
+      try {
+        final transactions = ref.read(transactionsProvider);
+        final bills = ref.read(billsProvider);
+        final budgets = ref.read(budgetsProvider);
+        final wallets = ref.read(walletsProvider);
+
+        response = _aiEngine.processQuery(
+          query: query,
+          transactions: transactions,
+          bills: bills,
+          budgets: budgets,
+          wallets: wallets,
+        );
+      } catch (e) {
+        // Tanpa try/catch di sini, error apa pun bikin _isTyping macet selamanya
+        // (indikator "mengetik" jalan terus, quick actions ke-hide permanen).
+        response = 'Maaf, ada kendala saat memproses pertanyaan kamu. Coba lagi ya. 🙏';
+      }
 
       setState(() {
         _isTyping = false;

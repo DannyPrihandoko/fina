@@ -34,11 +34,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   final OCRService _ocrService = OCRService();
   bool _isScanning = false;
 
-  @override
-  void dispose() {
-    _ocrService.dispose();
-    super.dispose();
-  }
+  // Catatan: OCRService adalah singleton (TextRecognizer dipakai bersama untuk seumur
+  // hidup app), jadi TIDAK di-dispose di sini. Kalau di-dispose lewat dispose() satu
+  // screen, semua scan struk berikutnya di sesi yang sama akan gagal karena recognizer-nya
+  // sudah closed — tidak ada cara recovery selain restart app.
 
   Future<void> _processScan(ImageSource source) async {
     setState(() => _isScanning = true);
@@ -710,19 +709,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(40),
       decoration: BoxDecoration(
-        color: Colors.white, 
+        color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: AppColors.borderColor.withOpacity(0.5)),
+        border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.5)),
       ),
       child: Column(
         children: [
           Container(
             padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(color: AppColors.cardPaleBlue.withOpacity(0.5), shape: BoxShape.circle),
-            child: Icon(Icons.inbox_rounded, color: AppColors.textMuted.withOpacity(0.3), size: 40),
+            decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5), shape: BoxShape.circle),
+            child: Icon(Icons.inbox_rounded, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3), size: 40),
           ),
           const SizedBox(height: 16),
-          Text(message, style: const TextStyle(color: AppColors.textMuted, fontWeight: FontWeight.bold, fontSize: 13)),
+          Text(message, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontWeight: FontWeight.bold, fontSize: 13)),
         ],
       ),
     );

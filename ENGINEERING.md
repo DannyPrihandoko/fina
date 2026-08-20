@@ -332,7 +332,7 @@ CREATE TABLE financial_goals (
   savedAmount  REAL NOT NULL DEFAULT 0,
   deadline     TEXT NOT NULL,       -- ISO 8601
   icon         TEXT NOT NULL DEFAULT '🎯',
-  color        TEXT NOT NULL DEFAULT '0xFF00BFA5'
+  color        TEXT NOT NULL DEFAULT '0xFF4CAF50'
 );
 ```
 
@@ -1403,6 +1403,21 @@ Aplikasi memiliki Android Home Widget asli (`FinaWidgetProvider.kt`) untuk melac
 ### Catatan untuk audit berikutnya
 
 Saat menemukan bug baru, tambahkan entri dengan format yang sama (file:line, skenario kegagalan, fix) di bagian yang sesuai tingkat keparahannya, dan jangan hapus histori item yang sudah `[x]` — itu adalah dokumentasi bahwa bug tersebut sudah pernah ada dan sudah ditangani.
+
+### Audit Round 2 — 20 Agustus 2026 (semua sudah diperbaiki `[x]`)
+
+Dipicu oleh dua perubahan sebelumnya (perluasan kategori OCR `local_ai_engine.dart` + retheme warna aksen ke hijau logo `colors.dart`). Semua item di bawah sudah diverifikasi manual dan di-fix, lulus `flutter analyze` + `flutter test` (9/9).
+
+- [x] **Keyword `'mart'` di kategori Makanan menutupi semua deteksi Belanja** — `local_ai_engine.dart` (Category Detection): `'mart'` sebagai substring generic membuat `indomaret`/`alfamart`/`supermarket`/`transmart`/`hypermart` (semua mengandung substring "mart") tidak pernah ter-reach karena Makanan dicek lebih dulu di rantai if/else-if. **Fix**: hapus `'mart'` dari daftar Makanan.
+- [x] **Warna teal lama (`0xFF00BFA5`) masih hardcoded di beberapa tempat, tidak ikut retheme** — `models/financial_goal.dart` (default `color`), `screens/add_goal_screen.dart` (termasuk swatch yang dilabeli **"Hijau" tapi nilainya teal**, bukan hijau), `screens/goals_screen.dart` (fallback parse warna), `services/database_service.dart` (2 tempat, DEFAULT kolom SQL `financial_goals.color`). **Fix**: semua diganti ke `0xFF4CAF50` (hijau logo, sama dengan `AppColors.ctaAqua`).
+- [x] **Wallet bisa dihapus meski masih punya transaksi → transaksi jadi orphan** — `database_service.dart` `deleteWallet()` tidak cascade-delete/cek transaksi terkait; `totalNetWorthProvider` cuma jumlah wallet yang masih ada, jadi saldo wallet yang dihapus hilang diam-diam dari net worth sementara transaksinya tetap nongkrong di riwayat selamanya. **Fix**: `wallets_screen.dart` `confirmDismiss` sekarang cek `walletTransactionsProvider(wallet.id)` dan blokir penghapusan (dengan SnackBar) kalau masih ada transaksi.
+- [x] **StreakBadge di dashboard nampilin angka basi, beda sama Home Widget Android** — `streak_provider.dart` cuma baca `streak_count` mentah dari prefs, gak pernah re-validasi apakah sudah lewat > 1 hari sejak aktivitas terakhir (`FinaWidgetProvider.kt` di sisi native sudah benar melakukan ini). User yang skip 1 hari dan buka app tanpa nambah transaksi akan lihat streak lama di dashboard padahal home widget udah benar nampilin 0. **Fix**: `streakProvider` sekarang menghitung ulang "masih hidup atau nggak" pakai `last_logged_date`, sama persis logika Kotlin-nya.
+- [x] **AI chat macet permanen di "sedang mengetik" kalau `processQuery()` error** — `ai_screen.dart` gak ada try/catch di sekitar pemanggilan engine; exception apa pun bikin `_isTyping` gak pernah balik ke `false`. **Fix**: dibungkus try/catch, tampilkan pesan error yang wajar ke user kalau gagal.
+- [x] **Empty-state card di Dashboard hardcode putih, rusak di dark mode** — `dashboard_screen.dart` `_buildEmptyState` pakai `Colors.white`/`AppColors.cardPaleBlue`/`AppColors.textMuted` langsung (semua warna mode terang), beda sendiri dari card lain yang sudah theme-aware. **Fix**: ganti ke `Theme.of(context).cardTheme.color`/`colorScheme.surfaceContainerHighest`/`colorScheme.onSurface`.
+- [x] **Off-by-milidetik di filter "Bulan Lalu"** — `stats_screen.dart` batas atas `DateTime(y, m, 0, 23, 59, 59)` (milidetik = 0) membuang transaksi di detik terakhir bulan lalu yang punya milidetik non-nol. **Fix**: batas atas diganti jadi awal bulan berjalan (`isBefore(currentMonthStart)`), otomatis mencakup seluruh hari terakhir tanpa peduli jam/menit/detik/milidetik.
+- [x] **OCRService (singleton) bisa di-dispose dari satu screen** — `dashboard_screen.dart` memanggil `_ocrService.dispose()` di `dispose()`-nya sendiri, padahal `TextRecognizer` di dalamnya dipakai bersama seumur hidup app. Latent bug (belum kejadian karena Dashboard tetap hidup di `IndexedStack`), tapi begitu ada alur yang benar-benar dispose `DashboardScreen`, semua scan struk berikutnya di sesi itu gagal permanen. **Fix**: hapus pemanggilan dispose dari screen; siklus hidup `TextRecognizer` singleton diserahkan ke seumur hidup app.
+
+**Dicek tapi tidak ada bug** (untuk referensi, jangan diaudit ulang tanpa alasan baru): migrasi DB `_upgradeDB` (guard `if (oldVersion < N)` independen, aman untuk lompat dari versi manapun ke versi terbaru), error handling `ocr_service.dart` (sudah benar), `ai_screen.dart` sudah benar mengirim `budgets`/`wallets` ke `processQuery`, `settings_tiles.dart` sudah benar `ref.watch`/`ref.read`, Dismissible swipe-to-delete di semua screen sudah benar pakai dialog konfirmasi.
 
 ---
 

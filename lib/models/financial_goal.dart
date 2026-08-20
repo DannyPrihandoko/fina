@@ -14,7 +14,7 @@ class FinancialGoal {
     this.savedAmount = 0,
     required this.deadline,
     this.icon = '🎯',
-    this.color = '0xFF00BFA5',
+    this.color = '0xFF4CAF50', // Hijau logo FiNa (AppColors.ctaAqua)
   });
 
   double get progress => targetAmount > 0 ? (savedAmount / targetAmount).clamp(0.0, 1.0) : 0.0;
@@ -46,7 +46,7 @@ class FinancialGoal {
       savedAmount: ((map['savedAmount'] ?? 0) as num).toDouble(),
       deadline: DateTime.parse(map['deadline']),
       icon: map['icon'] ?? '🎯',
-      color: map['color'] ?? '0xFF00BFA5',
+      color: map['color'] ?? '0xFF4CAF50',
     );
   }
 

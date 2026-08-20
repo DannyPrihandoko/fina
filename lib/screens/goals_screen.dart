@@ -190,7 +190,7 @@ class GoalsScreen extends ConsumerWidget {
   }
 
   Widget _buildGoalCard(BuildContext context, WidgetRef ref, FinancialGoal goal, NumberFormat fmt, bool isDark) {
-    final colorValue = int.tryParse(goal.color) ?? 0xFF00BFA5;
+    final colorValue = int.tryParse(goal.color) ?? 0xFF4CAF50;
     final goalColor = Color(colorValue);
 
     return Dismissible(

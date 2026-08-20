@@ -616,18 +616,52 @@ class LocalAIEngine {
       totalAmount = amounts.isNotEmpty ? amounts.reduce((a, b) => a > b ? a : b) : 0;
     }
 
-    // 4. Category Detection
+    // 4. Category Detection — kata kunci diperluas dengan merchant/vendor umum Indonesia
+    // supaya struk (makanan, retail, transportasi, hiburan, kesehatan, tagihan/cicilan)
+    // lebih akurat ter-klasifikasi otomatis. Semua kategori output HARUS termasuk dalam
+    // AppConstants.defaultCategories, karena form transaksi hanya punya chip untuk daftar itu.
     String category = 'Lainnya';
-    if (_containsAny(cleanText, ['makan', 'resto', 'cafe', 'kopi', 'bakery', 'warung', 'food', 'drink', 'mart', 'starbucks', 'kfc', 'mcd'])) {
+    if (_containsAny(cleanText, [
+      // 'mart' sengaja TIDAK dimasukkan di sini — substring generic itu akan menutupi
+      // 'indomaret'/'alfamart'/'supermarket'/'transmart'/'hypermart' di kategori Belanja
+      // di bawah karena Makanan dicek lebih dulu (if/else-if berurutan).
+      'makan', 'resto', 'cafe', 'kopi', 'bakery', 'warung', 'food', 'drink',
+      'starbucks', 'kfc', 'mcd', 'mcdonald', 'padang', 'sate', 'bakso', 'ayam geprek',
+      'richeese', 'pizza', 'dimsum', 'boba', 'chatime', 'kopi kenangan', 'janji jiwa',
+      'burger king', 'a&w', 'hokben', 'solaria', 'es teh', 'gofood', 'grabfood', 'shopeefood',
+    ])) {
       category = 'Makanan';
-    } else if (_containsAny(cleanText, ['beli', 'shop', 'store', 'indomaret', 'alfamart', 'supermarket', 'mall', 'transmart', 'tokopedia', 'shopee'])) {
+    } else if (_containsAny(cleanText, [
+      'beli', 'shop', 'store', 'indomaret', 'alfamart', 'supermarket', 'mall', 'transmart',
+      'tokopedia', 'shopee', 'giant', 'hypermart', 'carrefour', 'lazada', 'blibli', 'bukalapak',
+      'zalora', 'uniqlo', 'matahari', 'ace hardware', 'informa', 'ikea',
+    ])) {
       category = 'Belanja';
-    } else if (_containsAny(cleanText, ['grab', 'gojek', 'uber', 'taxi', 'bensin', 'shell', 'pertamina', 'parking', 'parkir', 'tol', 'travel'])) {
+    } else if (_containsAny(cleanText, [
+      'grab', 'gojek', 'uber', 'taxi', 'bensin', 'shell', 'pertamina', 'parking', 'parkir',
+      'tol', 'travel', 'maxim', 'bluebird', 'transjakarta', 'krl', 'commuterline', 'mrt', 'lrt',
+      'tiket.com', 'traveloka', 'pesawat', 'kereta', 'damri',
+    ])) {
       category = 'Transportasi';
-    } else if (_containsAny(cleanText, ['nonton', 'cinema', 'xxi', 'cgv', 'game', 'spotify', 'netflix', 'hobby', 'hobi', 'wisata'])) {
+    } else if (_containsAny(cleanText, [
+      'nonton', 'cinema', 'xxi', 'cgv', 'game', 'spotify', 'netflix', 'hobby', 'hobi', 'wisata',
+      'timezone', 'disney', 'viu', 'vidio', 'joox', 'youtube premium', 'concert', 'konser', 'tiket event',
+    ])) {
       category = 'Hiburan';
-    } else if (_containsAny(cleanText, ['apotek', 'obat', 'rs ', 'rumah sakit', 'klinik', 'doctor', 'dokter', 'sehat', 'health'])) {
+    } else if (_containsAny(cleanText, [
+      'apotek', 'obat', 'rs ', 'rumah sakit', 'klinik', 'doctor', 'dokter', 'sehat', 'health',
+      'kimia farma', 'guardian', 'watsons', 'k24', 'century', 'puskesmas', 'vaksin',
+      'dokter gigi', 'fisioterapi', 'bpjs kesehatan',
+    ])) {
       category = 'Kesehatan';
+    } else if (_containsAny(cleanText, [
+      // Tagihan/cicilan/utilitas — dipetakan ke 'Cicilan' (bukan string baru seperti 'Listrik')
+      // supaya konsisten dengan chip kategori yang tersedia di form transaksi.
+      'listrik', 'pln', 'pdam', 'wifi', 'indihome', 'internet', 'first media', 'biznet',
+      'telkom', 'cicilan', 'kredit', 'angsuran', 'pinjaman', 'tagihan', 'pajak', 'pbb',
+      'asuransi', 'premi', 'bpjs ketenagakerjaan', 'sewa', 'kontrakan',
+    ])) {
+      category = 'Cicilan';
     }
 
     // 5. Title Detection (Look for store name usually at the top)
