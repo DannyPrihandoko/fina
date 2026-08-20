@@ -1358,6 +1358,17 @@ dev_dependencies:
 5. Tambahkan `google-services.json` ke `android/app/`
 6. `flutter run`
 
+> ⚠️ **Build APK Android — JVM target 11:** `android/app/build.gradle.kts` mem-compile modul
+> app di JVM target 11, tapi beberapa plugin pihak ketiga (`home_widget`) tidak set target-nya
+> sendiri dan jatuh ke default 1.8, menyebabkan Gradle gagal build dengan error
+> `Cannot inline bytecode built with JVM target 11 into bytecode that is being built with
+> JVM target 1.8`. Sudah diperbaiki (19 Agustus 2026) dengan menambah blok `subprojects { afterEvaluate { ... } }`
+> di `android/build.gradle.kts` yang memaksa SEMUA subproject (termasuk plugin) pakai JVM
+> target 11 yang sama. Blok ini harus tetap didaftarkan **sebelum** baris
+> `subprojects { project.evaluationDependsOn(":app") }` — kalau dibalik urutannya, Gradle
+> error `Cannot run Project.afterEvaluate(Action) when the project is already evaluated`
+> karena `:app` sudah selesai dievaluasi duluan.
+
 ### 16.6 Checklist Sebelum PR
 
 - [ ] Semua model baru punya `toMap()`, `fromMap()`, `copyWith()`
